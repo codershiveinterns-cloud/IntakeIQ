@@ -105,6 +105,7 @@ export default function LoginPage() {
   const handleClientQuickLogin = () => {
     if (isQuickLoggingIn) return;
     setIsQuickLoggingIn(true);
+    login("david@luminahealth.io");
     const demoCase = DataStore.getCaseById("case-101");
     const demoFirm = demoCase ? DataStore.getFirmById(demoCase.firmId) : undefined;
     router.push(`/portal/${demoFirm?.slug || "apex-advisory"}/${demoCase?.id || "case-101"}`);
@@ -416,57 +417,57 @@ export default function LoginPage() {
                 {/* Admin Profile */}
                 <button
                   type="button"
-                  disabled
-                  aria-disabled="true"
-                  className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-left transition-all duration-150 ease-out opacity-60 cursor-not-allowed group focus-visible:outline-none"
+                  onClick={() => handleQuickLogin("Admin", "admin@apexadvisory.com", "firm-apex")}
+                  disabled={isQuickLoggingIn || isSubmitting}
+                  className="p-3 bg-slate-50 hover:bg-purple-50/70 hover:border-purple-300 rounded-xl border border-slate-200 text-left transition-all duration-150 ease-out group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm hover:shadow"
                 >
-                  <div className="flex items-center gap-1.5 text-purple-600 font-bold text-xs">
-                    <ShieldCheck className="w-3.5 h-3.5" />
+                  <div className="flex items-center gap-1.5 text-purple-600 font-bold text-xs group-hover:text-purple-700">
+                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
                     <span>Eleanor Vance</span>
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">Admin (Apex Advisory)</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5 group-hover:text-slate-700">Admin (Apex Advisory)</div>
                 </button>
 
                 {/* Case Manager Profile */}
                 <button
                   type="button"
-                  disabled
-                  aria-disabled="true"
-                  className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-left transition-all duration-150 ease-out opacity-60 cursor-not-allowed group focus-visible:outline-none"
+                  onClick={() => handleQuickLogin("CaseManager", "casemanager@apexadvisory.com", "firm-apex")}
+                  disabled={isQuickLoggingIn || isSubmitting}
+                  className="p-3 bg-slate-50 hover:bg-blue-50/70 hover:border-blue-300 rounded-xl border border-slate-200 text-left transition-all duration-150 ease-out group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm hover:shadow"
                 >
-                  <div className="flex items-center gap-1.5 text-blue-600 font-bold text-xs">
-                    <UserCheck className="w-3.5 h-3.5" />
+                  <div className="flex items-center gap-1.5 text-blue-600 font-bold text-xs group-hover:text-blue-700">
+                    <UserCheck className="w-3.5 h-3.5 shrink-0" />
                     <span>Marcus Sterling</span>
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">Case Manager (Reviewer)</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5 group-hover:text-slate-700">Case Manager (Reviewer)</div>
                 </button>
 
                 {/* Staff Profile */}
                 <button
                   type="button"
-                  disabled
-                  aria-disabled="true"
-                  className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-left transition-all duration-150 ease-out opacity-60 cursor-not-allowed group focus-visible:outline-none"
+                  onClick={() => handleQuickLogin("Staff", "staff@apexadvisory.com", "firm-apex")}
+                  disabled={isQuickLoggingIn || isSubmitting}
+                  className="p-3 bg-slate-50 hover:bg-emerald-50/70 hover:border-emerald-300 rounded-xl border border-slate-200 text-left transition-all duration-150 ease-out group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm hover:shadow"
                 >
-                  <div className="flex items-center gap-1.5 text-emerald-600 font-bold text-xs">
-                    <Eye className="w-3.5 h-3.5" />
+                  <div className="flex items-center gap-1.5 text-emerald-600 font-bold text-xs group-hover:text-emerald-700">
+                    <Eye className="w-3.5 h-3.5 shrink-0" />
                     <span>Chloe Zhao</span>
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">Staff (View-Only)</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5 group-hover:text-slate-700">Staff (View-Only)</div>
                 </button>
 
                 {/* Client Portal Profile */}
                 <button
                   type="button"
-                  disabled
-                  aria-disabled="true"
-                  className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-left transition-all duration-150 ease-out opacity-60 cursor-not-allowed group focus-visible:outline-none"
+                  onClick={handleClientQuickLogin}
+                  disabled={isQuickLoggingIn || isSubmitting}
+                  className="p-3 bg-slate-50 hover:bg-amber-50/70 hover:border-amber-300 rounded-xl border border-slate-200 text-left transition-all duration-150 ease-out group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm hover:shadow"
                 >
-                  <div className="flex items-center gap-1.5 text-amber-600 font-bold text-xs">
-                    <User className="w-3.5 h-3.5" />
+                  <div className="flex items-center gap-1.5 text-amber-600 font-bold text-xs group-hover:text-amber-700">
+                    <User className="w-3.5 h-3.5 shrink-0" />
                     <span>David Chen</span>
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">Client Portal (Lumina Health)</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5 group-hover:text-slate-700">Client Portal (Lumina Health)</div>
                 </button>
               </div>
             </div>
