@@ -57,8 +57,8 @@ export default function FounderSection() {
               {/* Left: Founder Portrait & Badges */}
               <div className="lg:col-span-5 flex flex-col items-center">
                 <div className="relative group">
-                  <div className="absolute -inset-2 bg-gradient-to-r from-brand-500 to-tealAccent-400 rounded-3xl blur-md opacity-40 group-hover:opacity-75 transition duration-500" />
-                  <div className="relative w-64 sm:w-72 lg:w-80 h-80 sm:h-96 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20 bg-slate-800">
+                  <div className="absolute -inset-2 bg-gradient-to-r from-brand-500 to-tealAccent-400 rounded-3xl blur-xl opacity-20 group-hover:opacity-40 transition duration-500" />
+                  <div className="relative w-64 sm:w-72 lg:w-80 h-80 sm:h-96 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20 bg-slate-900">
                     <Image
                       src="/images/karan-mittal.jpg"
                       alt="Karan Mittal - Founder of IntakeIQ"
