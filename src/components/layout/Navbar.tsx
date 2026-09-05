@@ -311,6 +311,13 @@ export default function Navbar({ onRequestDemo, onOpenLogin }: NavbarProps) {
               Security
             </a>
 
+            <Link
+              href="/about"
+              className="px-3.5 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+            >
+              About Us
+            </Link>
+
           </nav>
 
           {/* Right Action Buttons */}

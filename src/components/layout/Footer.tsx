@@ -209,6 +209,11 @@ export default function Footer({ onRequestDemo }: { onRequestDemo: () => void })
             </h4>
             <ul className="space-y-2.5 text-xs">
               <li>
+                <a href="/about" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 font-semibold text-brand-400">
+                  About Us & Founder
+                </a>
+              </li>
+              <li>
                 <a href="/#security" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                   Security Overview
                 </a>
