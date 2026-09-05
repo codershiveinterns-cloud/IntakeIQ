@@ -330,7 +330,7 @@ export default function Navbar({ onRequestDemo, onOpenLogin }: NavbarProps) {
             </Link>
 
             <Link
-              href="/dashboard"
+              href="/auth/login"
               className="px-5 py-2.5 text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 active:bg-brand-700 rounded-lg shadow-sm hover:shadow transition-all duration-150 transform hover:-translate-y-0.5 flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
             >
               <span>Launch App</span>
