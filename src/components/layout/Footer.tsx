@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { ShieldCheck, Mail, ArrowRight, CheckCircle2, Linkedin, Twitter, Github, Loader2 } from "lucide-react";
 import { useToast } from "@/components/shared/ToastProvider";
 import LogoMark from "@/components/shared/LogoMark";
@@ -229,22 +230,20 @@ export default function Footer({ onRequestDemo }: { onRequestDemo: () => void })
                 </a>
               </li>
               <li>
-                <a
-                  href="#"
-                  onClick={notifyComingSoon("Our Privacy Policy")}
+                <Link
+                  href="/privacy"
                   className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                 >
                   Privacy Policy
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
-                  onClick={notifyComingSoon("Our Terms of Service")}
+                <Link
+                  href="/terms"
                   className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                 >
                   Terms of Service
-                </a>
+                </Link>
               </li>
             </ul>
 
