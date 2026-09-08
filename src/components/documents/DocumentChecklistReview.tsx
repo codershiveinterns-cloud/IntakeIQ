@@ -5,6 +5,7 @@ import { ChecklistItem, UserProfile, DocStatus } from "@/lib/types";
 import StatusBadge from "../shared/StatusBadge";
 import VersionHistoryModal from "./VersionHistoryModal";
 import { useToast } from "@/components/shared/ToastProvider";
+import { LockedFeatureCard } from "@/components/shared/FeatureGate";
 import {
   FileCheck,
   CheckCircle,
@@ -24,6 +25,8 @@ interface DocumentChecklistReviewProps {
   reviewer: UserProfile | null;
   onReview: (checklistItemId: string, status: "Approved" | "Rejected", reason?: string) => void;
   readOnly?: boolean;
+  /** Whether the firm's plan includes AI extraction; locked firms see an upgrade prompt instead of the panel. */
+  aiExtractionUnlocked?: boolean;
 }
 
 export default function DocumentChecklistReview({
@@ -31,6 +34,7 @@ export default function DocumentChecklistReview({
   reviewer,
   onReview,
   readOnly = false,
+  aiExtractionUnlocked = true,
 }: DocumentChecklistReviewProps) {
   const toast = useToast();
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<ChecklistItem | null>(null);
@@ -167,8 +171,13 @@ export default function DocumentChecklistReview({
               </div>
             )}
 
+            {/* AI Extraction — locked on plans without the feature */}
+            {!aiExtractionUnlocked && latestVersion && (
+              <LockedFeatureCard feature="ai_extraction" compact className="my-2" />
+            )}
+
             {/* AI Extraction & Cross-Check Panel */}
-            {item.extraction && (
+            {item.extraction && aiExtractionUnlocked && (
               <div
                 className={`p-3 rounded-lg border my-2 space-y-2 ${
                   item.extraction.confidence >= 85

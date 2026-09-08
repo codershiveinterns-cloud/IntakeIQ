@@ -8,6 +8,8 @@ import { DataStore } from "@/lib/store/dataStore";
 import { ClientCase, CaseStatus } from "@/lib/types";
 import CaseTable from "@/components/dashboard/CaseTable";
 import CaseKanban from "@/components/dashboard/CaseKanban";
+import { useToast } from "@/components/shared/ToastProvider";
+import { useFirmPlan, LockedFeatureCard } from "@/components/shared/FeatureGate";
 import {
   FolderKanban,
   PlusCircle,
@@ -20,12 +22,17 @@ import {
   Clock,
   AlertCircle,
   FileCheck2,
+  Lock,
   Users
 } from "lucide-react";
 
 export default function DashboardPage() {
   const { currentUser, role } = useAuth();
   const { currentFirm } = useTenant();
+  const toast = useToast();
+  const { can } = useFirmPlan();
+  const kanbanUnlocked = can("kanban_board");
+  const [showKanbanUpsell, setShowKanbanUpsell] = useState(false);
 
   const [cases, setCases] = useState<ClientCase[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -175,22 +182,37 @@ export default function DashboardPage() {
               <List className="w-4 h-4" />
             </button>
             <button
-              onClick={() => setViewMode("kanban")}
-              title="Kanban Board View"
+              onClick={() => {
+                if (!kanbanUnlocked) {
+                  setShowKanbanUpsell(true);
+                  toast.info("The Kanban pipeline board is included in the Professional plan.");
+                  return;
+                }
+                setViewMode("kanban");
+              }}
+              title={kanbanUnlocked ? "Kanban Board View" : "Kanban Board View — Professional plan"}
               aria-label="Kanban Board View"
-              aria-pressed={viewMode === "kanban"}
-              className={`p-2.5 rounded transition-all duration-150 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${
-                viewMode === "kanban" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-800"
+              aria-pressed={viewMode === "kanban" && kanbanUnlocked}
+              className={`relative p-2.5 rounded transition-all duration-150 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${
+                viewMode === "kanban" && kanbanUnlocked ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-800"
               }`}
             >
               <LayoutGrid className="w-4 h-4" />
+              {!kanbanUnlocked && (
+                <Lock className="w-2.5 h-2.5 text-amber-500 absolute top-1 right-1" />
+              )}
             </button>
           </div>
         </div>
       </div>
 
+      {/* Kanban upsell (shown after a locked toggle click) */}
+      {showKanbanUpsell && !kanbanUnlocked && (
+        <LockedFeatureCard feature="kanban_board" compact />
+      )}
+
       {/* Case Content View (Table vs Kanban) */}
-      {viewMode === "table" ? (
+      {viewMode === "table" || !kanbanUnlocked ? (
         <CaseTable cases={filteredCases} onRefresh={refreshCases} />
       ) : (
         <CaseKanban cases={filteredCases} />

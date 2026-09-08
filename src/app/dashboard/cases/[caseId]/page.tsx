@@ -11,9 +11,11 @@ import StatusBadge from "@/components/shared/StatusBadge";
 import DynamicFormRenderer from "@/components/forms/DynamicFormRenderer";
 import DocumentChecklistReview from "@/components/documents/DocumentChecklistReview";
 import { useToast } from "@/components/shared/ToastProvider";
+import { useFirmPlan } from "@/components/shared/FeatureGate";
 import {
   ArrowLeft,
   Building2,
+  Lock,
   Mail,
   User,
   ExternalLink,
@@ -52,6 +54,7 @@ export default function CaseDetailPage() {
   const { currentUser, role } = useAuth();
   const { currentFirm } = useTenant();
   const toast = useToast();
+  const { can } = useFirmPlan();
 
   const [clientCase, setClientCase] = useState<ClientCase | null>(null);
   const [template, setTemplate] = useState<FormTemplate | null>(null);
@@ -347,6 +350,7 @@ export default function CaseDetailPage() {
             reviewer={currentUser}
             onReview={handleDocumentReview}
             readOnly={isStaffReadOnly}
+            aiExtractionUnlocked={can("ai_extraction")}
           />
         </div>
       )}
@@ -403,21 +407,32 @@ export default function CaseDetailPage() {
                 Complete chronological audit trail of all form submissions, uploads, reviews, and status changes.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() =>
-                downloadTextFile(
-                  `intakeiq-audit-${clientCase.id}.csv`,
-                  DataStore.auditLogsToCSV(auditLogs),
-                  "text/csv;charset=utf-8;"
-                )
-              }
-              disabled={auditLogs.length === 0}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 shadow-xs transition-all duration-150 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
-            >
-              <Download className="w-3.5 h-3.5 text-slate-500" />
-              <span>Export CSV</span>
-            </button>
+            {can("audit_export") ? (
+              <button
+                type="button"
+                onClick={() =>
+                  downloadTextFile(
+                    `intakeiq-audit-${clientCase.id}.csv`,
+                    DataStore.auditLogsToCSV(auditLogs),
+                    "text/csv;charset=utf-8;"
+                  )
+                }
+                disabled={auditLogs.length === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 shadow-xs transition-all duration-150 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-500" />
+                <span>Export CSV</span>
+              </button>
+            ) : (
+              <Link
+                href="/dashboard/billing?feature=audit_export"
+                title="Audit & compliance export is included in the Enterprise plan"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-200 transition-all duration-150 active:scale-[0.98] shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+              >
+                <Lock className="w-3.5 h-3.5 text-amber-600" />
+                <span>Export · Enterprise</span>
+              </Link>
+            )}
           </div>
 
           <div className="space-y-3">

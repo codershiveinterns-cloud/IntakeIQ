@@ -12,6 +12,9 @@ export const INITIAL_FIRMS: Firm[] = [
     phone: "+1 (555) 349-2900",
     address: "450 Lexington Ave, Suite 2400, New York, NY 10017",
     industry: "Law & Legal",
+    plan: "starter",
+    billingCycle: "monthly",
+    planActivatedAt: "2026-01-15T09:00:00Z",
     createdAt: "2026-01-15T09:00:00Z",
   },
   {
@@ -25,6 +28,9 @@ export const INITIAL_FIRMS: Firm[] = [
     phone: "+1 (555) 782-1144",
     address: "100 Montgomery St, San Francisco, CA 94104",
     industry: "Accounting & CA",
+    plan: "professional",
+    billingCycle: "annual",
+    planActivatedAt: "2026-02-01T10:30:00Z",
     createdAt: "2026-02-01T10:30:00Z",
   }
 ];

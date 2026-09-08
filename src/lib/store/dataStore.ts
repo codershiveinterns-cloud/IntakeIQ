@@ -14,8 +14,11 @@ import {
   DocStatus,
   DocVersion,
   ChecklistItem,
-  CaseStatus
+  CaseStatus,
+  PlanTier,
+  BillingCycle
 } from "../types";
+import { PLANS, FEATURE_LABELS, hasFeature, resolvePlanTier, planRank } from "../billing/plans";
 import {
   INITIAL_FIRMS,
   INITIAL_USERS,
@@ -234,10 +237,15 @@ export class DataStore {
 
   public static createFirm(firmData: Omit<Firm, "id" | "createdAt">): Firm {
     const firms = this.getFirms();
+    const now = new Date().toISOString();
     const newFirm: Firm = {
       ...firmData,
+      // New workspaces start on Starter; upgrades go through upgradeFirmPlan().
+      plan: firmData.plan ?? "starter",
+      billingCycle: firmData.billingCycle ?? "monthly",
+      planActivatedAt: firmData.planActivatedAt ?? now,
       id: `firm-${Date.now()}`,
-      createdAt: new Date().toISOString(),
+      createdAt: now,
     };
     firms.push(newFirm);
     setLocalItem(STORAGE_KEYS.FIRMS, firms);
@@ -256,6 +264,55 @@ export class DataStore {
     };
     setLocalItem(STORAGE_KEYS.FIRMS, firms);
     return firms[index];
+  }
+
+  // ================= SUBSCRIPTION / BILLING =================
+  // No payment processor is connected — the simulated checkout calls this
+  // once "payment" succeeds, and it's the single place a firm's tier changes.
+  public static upgradeFirmPlan(
+    firmId: string,
+    tier: PlanTier,
+    cycle: BillingCycle,
+    actor?: UserProfile
+  ): Firm {
+    const firm = this.getFirmById(firmId);
+    if (!firm) throw new Error("Firm not found");
+
+    const previous = resolvePlanTier(firm.plan);
+    const updated = this.updateFirm(firmId, {
+      plan: tier,
+      billingCycle: cycle,
+      planActivatedAt: new Date().toISOString(),
+    });
+
+    const isUpgrade = planRank(tier) > planRank(previous);
+    const unlocked = PLANS[tier].features.map((f) => FEATURE_LABELS[f]);
+
+    this.addAuditLog({
+      firmId,
+      actorId: actor?.id ?? "system-billing",
+      actorName: actor?.name ?? "IntakeIQ Billing",
+      actorRole: actor?.role ?? "Admin",
+      action: isUpgrade ? "Subscription Upgraded" : "Subscription Changed",
+      targetEntity: `${PLANS[previous].name} → ${PLANS[tier].name}`,
+      details: `${PLANS[tier].name} plan activated on ${cycle} billing. ${
+        unlocked.length > 0 ? `Unlocked: ${unlocked.join(", ")}.` : "Core features only."
+      }`,
+    });
+
+    this.addNotification({
+      firmId,
+      type: "plan_upgraded",
+      title: isUpgrade ? `Upgraded to ${PLANS[tier].name}` : `Plan changed to ${PLANS[tier].name}`,
+      message:
+        isUpgrade && unlocked.length > 0
+          ? `Your firm now has access to ${unlocked.slice(0, 3).join(", ")}${
+              unlocked.length > 3 ? ` and ${unlocked.length - 3} more` : ""
+            }.`
+          : `Your subscription is now on the ${PLANS[tier].name} plan.`,
+    });
+
+    return updated;
   }
 
   // ================= USERS METHODS =================
@@ -522,7 +579,12 @@ export class DataStore {
       uploadedBy: fileInfo.uploadedBy,
     };
 
-    const extraction = simulateDocumentExtraction(item.name, c);
+    // AI extraction is a Professional-plan feature — Starter firms still get
+    // the upload itself, just without the extracted-field analysis.
+    const firm = this.getFirmById(c.firmId);
+    const extraction = hasFeature(firm?.plan, "ai_extraction")
+      ? simulateDocumentExtraction(item.name, c)
+      : undefined;
 
     const updatedItem: ChecklistItem = {
       ...item,
@@ -551,20 +613,21 @@ export class DataStore {
       details: `File size: ${(fileInfo.fileSize / (1024 * 1024)).toFixed(2)} MB.`
     });
 
-    this.addAuditLog({
-      firmId: c.firmId,
-      caseId: c.id,
-      caseTitle: c.title,
-      actorId: "system-ai",
-      actorName: "IntakeIQ AI Extraction",
-      actorRole: "Staff",
-      action: "AI Extraction Completed",
-      targetEntity: `${item.name} — ${extraction.documentType}`,
-      details: `Confidence ${extraction.confidence}%. ${extraction.crossCheckSummary}.`
-    });
+    if (extraction) {
+      this.addAuditLog({
+        firmId: c.firmId,
+        caseId: c.id,
+        caseTitle: c.title,
+        actorId: "system-ai",
+        actorName: "IntakeIQ AI Extraction",
+        actorRole: "Staff",
+        action: "AI Extraction Completed",
+        targetEntity: `${item.name} — ${extraction.documentType}`,
+        details: `Confidence ${extraction.confidence}%. ${extraction.crossCheckSummary}.`
+      });
+    }
 
     // Notify staff
-    const firm = this.getFirmById(c.firmId);
     this.sendEmail({
       firmId: c.firmId,
       to: firm?.contactEmail || "staff@firm.com",
@@ -583,8 +646,8 @@ export class DataStore {
       caseId: c.id,
     });
 
-    const hasMismatch = extraction.fields.some((f) => f.status === "mismatch");
-    if (hasMismatch || extraction.confidence < 75) {
+    const hasMismatch = extraction ? extraction.fields.some((f) => f.status === "mismatch") : false;
+    if (extraction && (hasMismatch || extraction.confidence < 75)) {
       this.addNotification({
         firmId: c.firmId,
         type: "extraction_flagged",

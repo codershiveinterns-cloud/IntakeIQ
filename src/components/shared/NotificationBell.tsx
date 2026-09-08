@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   PartyPopper,
   CheckCheck,
+  Crown,
 } from "lucide-react";
 
 const NOTIFICATION_ICONS: Record<NotificationType, typeof Bell> = {
@@ -24,6 +25,7 @@ const NOTIFICATION_ICONS: Record<NotificationType, typeof Bell> = {
   doc_rejected: XCircle,
   extraction_flagged: AlertTriangle,
   case_approved: PartyPopper,
+  plan_upgraded: Crown,
 };
 
 const NOTIFICATION_COLORS: Record<NotificationType, string> = {
@@ -34,6 +36,7 @@ const NOTIFICATION_COLORS: Record<NotificationType, string> = {
   doc_rejected: "bg-rose-100 text-rose-600",
   extraction_flagged: "bg-amber-100 text-amber-600",
   case_approved: "bg-purple-100 text-purple-600",
+  plan_upgraded: "bg-indigo-100 text-indigo-600",
 };
 
 function timeAgo(iso: string): string {

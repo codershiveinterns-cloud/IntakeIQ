@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { useAuth } from "@/lib/context/AuthContext";
 import { useTenant } from "@/lib/context/TenantContext";
 import { DataStore } from "@/lib/store/dataStore";
@@ -8,6 +9,7 @@ import { UserProfile, UserRole } from "@/lib/types";
 import { useToast } from "@/components/shared/ToastProvider";
 import { RoleGuard } from "@/components/shared/RoleGuard";
 import { hasPermission, getRoleBadgeStyle } from "@/lib/auth/permissions";
+import { useFirmPlan } from "@/components/shared/FeatureGate";
 import {
   Users,
   UserPlus,
@@ -25,8 +27,12 @@ export default function TeamPage() {
   const { currentUser, role } = useAuth();
   const { currentFirm } = useTenant();
   const toast = useToast();
+  const { definition: plan } = useFirmPlan();
 
   const [teamMembers, setTeamMembers] = useState<UserProfile[]>([]);
+  const seatsUsed = teamMembers.filter((u) => u.role !== "Client").length;
+  const seatLimit = plan.seatLimit;
+  const seatLimitReached = seatLimit !== null && seatsUsed >= seatLimit;
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
@@ -58,6 +64,12 @@ export default function TeamPage() {
     if (!currentFirm || !currentUser) return;
     if (!inviteName.trim() || !inviteEmail.trim()) {
       toast.error("Please provide member name and email.");
+      return;
+    }
+    if (seatLimitReached) {
+      toast.error(
+        `Your ${plan.name} plan includes up to ${seatLimit} team members. Upgrade in Billing & Plans to add more.`
+      );
       return;
     }
 
@@ -119,6 +131,23 @@ export default function TeamPage() {
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Manage your firm's case managers, reviewers, and staff access permissions.
+          </p>
+          <p className="text-[11px] mt-1.5 inline-flex items-center gap-1.5">
+            <span
+              className={`px-2 py-0.5 rounded-full font-bold border ${
+                seatLimitReached
+                  ? "bg-rose-50 text-rose-700 border-rose-200"
+                  : "bg-slate-100 text-slate-700 border-slate-200"
+              }`}
+            >
+              {seatsUsed} / {seatLimit ?? "∞"} seats used
+            </span>
+            <span className="text-slate-400">· {plan.name} plan</span>
+            {seatLimitReached && (
+              <Link href="/dashboard/billing" className="font-semibold text-brand-600 hover:underline">
+                Upgrade for more seats →
+              </Link>
+            )}
           </p>
         </div>
 

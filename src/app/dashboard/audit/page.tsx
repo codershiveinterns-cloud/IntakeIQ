@@ -5,6 +5,8 @@ import { useAuth } from "@/lib/context/AuthContext";
 import { useTenant } from "@/lib/context/TenantContext";
 import { DataStore } from "@/lib/store/dataStore";
 import { AuditLogEntry } from "@/lib/types";
+import Link from "next/link";
+import { FeatureGate, useFirmPlan } from "@/components/shared/FeatureGate";
 import {
   ShieldAlert,
   Search,
@@ -33,6 +35,8 @@ function downloadTextFile(filename: string, content: string, mimeType: string) {
 
 export default function AuditTrailPage() {
   const { currentFirm } = useTenant();
+  const { can } = useFirmPlan();
+  const exportUnlocked = can("audit_export");
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [search, setSearch] = useState("");
   const [selectedAction, setSelectedAction] = useState("ALL");
@@ -90,6 +94,7 @@ export default function AuditTrailPage() {
   };
 
   return (
+    <FeatureGate feature="audit_trail">
     <div className="space-y-6">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -107,26 +112,37 @@ export default function AuditTrailPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleExportCSV}
-            disabled={filteredLogs.length === 0}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 rounded-xl border border-slate-200 shadow-xs transition-all duration-150 ease-out active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+        {exportUnlocked ? (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              disabled={filteredLogs.length === 0}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 rounded-xl border border-slate-200 shadow-xs transition-all duration-150 ease-out active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-500" />
+              <span>Export CSV</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleExportJSON}
+              disabled={filteredLogs.length === 0}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 rounded-xl border border-slate-200 shadow-xs transition-all duration-150 ease-out active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-500" />
+              <span>Export JSON</span>
+            </button>
+          </div>
+        ) : (
+          <Link
+            href="/dashboard/billing?feature=audit_export"
+            title="Audit & compliance export is included in the Enterprise plan"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-200 transition-all duration-150 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
           >
-            <Download className="w-3.5 h-3.5 text-slate-500" />
-            <span>Export CSV</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleExportJSON}
-            disabled={filteredLogs.length === 0}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 rounded-xl border border-slate-200 shadow-xs transition-all duration-150 ease-out active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
-          >
-            <Download className="w-3.5 h-3.5 text-slate-500" />
-            <span>Export JSON</span>
-          </button>
-        </div>
+            <Lock className="w-3.5 h-3.5 text-amber-600" />
+            <span>Export · Enterprise</span>
+          </Link>
+        )}
       </div>
 
       {/* Filter & Search Bar */}
@@ -238,5 +254,6 @@ export default function AuditTrailPage() {
         </div>
       </div>
     </div>
+    </FeatureGate>
   );
 }

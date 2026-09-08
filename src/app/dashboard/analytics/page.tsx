@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTenant } from "@/lib/context/TenantContext";
 import { DataStore } from "@/lib/store/dataStore";
 import { ClientCase, CaseStatus } from "@/lib/types";
+import { FeatureGate } from "@/components/shared/FeatureGate";
 import {
   BarChart3,
   FolderKanban,
@@ -141,6 +142,7 @@ export default function AnalyticsPage() {
   ];
 
   return (
+    <FeatureGate feature="analytics">
     <div className="space-y-6">
       <div>
         <div className="flex items-center gap-2">
@@ -267,5 +269,6 @@ export default function AnalyticsPage() {
         </div>
       </div>
     </div>
+    </FeatureGate>
   );
 }

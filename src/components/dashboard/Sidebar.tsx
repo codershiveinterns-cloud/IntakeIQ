@@ -22,8 +22,11 @@ import {
   LogOut,
   X,
   BarChart3,
+  CreditCard,
 } from "lucide-react";
 import { PermissionAction, hasPermission, getRoleBadgeStyle } from "@/lib/auth/permissions";
+import { useFirmPlan } from "@/components/shared/FeatureGate";
+import { PlanFeature, PLANS, requiredPlanFor } from "@/lib/billing/plans";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -36,6 +39,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const { currentUser, role, logout } = useAuth();
   const { currentFirm } = useTenant();
   const toast = useToast();
+  const { can } = useFirmPlan();
 
   // Prefer a case that actually belongs to the active firm so the portal
   // quick-links never point at a case owned by a different tenant.
@@ -54,6 +58,8 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     icon: any;
     match: (p: string) => boolean;
     permission?: PermissionAction;
+    /** Subscription feature this page requires; locked items still link through to an upgrade prompt. */
+    planFeature?: PlanFeature;
   }[] = [
     {
       name: "Clients & Cases",
@@ -89,6 +95,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       icon: BarChart3,
       match: (p: string) => p.startsWith("/dashboard/analytics"),
       permission: "audit:view",
+      planFeature: "analytics",
     },
     {
       name: "Audit Trail",
@@ -96,6 +103,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       icon: ShieldAlert,
       match: (p: string) => p.startsWith("/dashboard/audit"),
       permission: "audit:view",
+      planFeature: "audit_trail",
     },
     {
       name: "Email Outbox",
@@ -103,6 +111,13 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       icon: Mail,
       match: (p: string) => p.startsWith("/dashboard/outbox"),
       permission: "outbox:view",
+    },
+    {
+      name: "Billing & Plans",
+      href: "/dashboard/billing",
+      icon: CreditCard,
+      match: (p: string) => p.startsWith("/dashboard/billing"),
+      permission: "settings:view",
     },
   ];
 
@@ -190,15 +205,24 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                   : "text-slate-300 hover:text-white hover:bg-slate-800/60 border-l-2 border-transparent"
               }`}
             >
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <Icon
-                  className={`w-4 h-4 ${
+                  className={`w-4 h-4 shrink-0 ${
                     isActive ? "text-cyan-400" : "text-slate-400 group-hover:text-slate-200"
                   }`}
                 />
-                <span>{item.name}</span>
+                <span className="truncate">{item.name}</span>
+                {item.planFeature && !can(item.planFeature) && (
+                  <span
+                    title={`Included in the ${PLANS[requiredPlanFor(item.planFeature)].name} plan`}
+                    className="inline-flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-300 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded shrink-0"
+                  >
+                    <Lock className="w-2.5 h-2.5" />
+                    {requiredPlanFor(item.planFeature) === "professional" ? "Pro" : "Ent"}
+                  </span>
+                )}
               </div>
-              {isActive && <ChevronRight className="w-3.5 h-3.5 text-cyan-400" />}
+              {isActive && <ChevronRight className="w-3.5 h-3.5 text-cyan-400 shrink-0" />}
             </Link>
           );
         })}

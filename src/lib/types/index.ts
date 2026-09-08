@@ -1,5 +1,8 @@
 export type UserRole = 'Admin' | 'CaseManager' | 'Staff' | 'Client';
 
+export type PlanTier = 'starter' | 'professional' | 'enterprise';
+export type BillingCycle = 'monthly' | 'annual';
+
 export interface Firm {
   id: string;
   name: string;
@@ -11,6 +14,10 @@ export interface Firm {
   phone?: string;
   address?: string;
   industry?: 'Accounting & CA' | 'Law & Legal' | 'Financial Advisory' | 'Consulting & Agency' | 'Other';
+  // Subscription — undefined is treated as 'starter' (see lib/billing/plans.ts)
+  plan?: PlanTier;
+  billingCycle?: BillingCycle;
+  planActivatedAt?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -178,7 +185,8 @@ export type NotificationType =
   | 'doc_approved'
   | 'doc_rejected'
   | 'extraction_flagged'
-  | 'case_approved';
+  | 'case_approved'
+  | 'plan_upgraded';
 
 export interface AppNotification {
   id: string;

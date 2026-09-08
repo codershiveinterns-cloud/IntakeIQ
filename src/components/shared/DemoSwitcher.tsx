@@ -18,9 +18,11 @@ import {
   Mail,
   Sparkles,
   ChevronDown,
-  Layers
+  Layers,
+  Crown
 } from "lucide-react";
 import Link from "next/link";
+import { PLANS, resolvePlanTier } from "@/lib/billing/plans";
 
 export default function DemoSwitcher() {
   const { currentUser, role, switchRole } = useAuth();
@@ -152,6 +154,24 @@ export default function DemoSwitcher() {
               </div>
             )}
           </div>
+
+          {/* Subscription plan pill */}
+          {currentFirm && (
+            <Link
+              href="/dashboard/billing"
+              title="Manage subscription in Billing & Plans"
+              className={`hidden md:inline-flex items-center gap-1 px-2 py-1 rounded border text-[10px] font-bold uppercase tracking-wider transition-all duration-150 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
+                resolvePlanTier(currentFirm.plan) === "enterprise"
+                  ? "bg-purple-950/70 text-purple-300 border-purple-800 hover:bg-purple-900/70"
+                  : resolvePlanTier(currentFirm.plan) === "professional"
+                  ? "bg-brand-950/70 text-brand-300 border-brand-800 hover:bg-brand-900/70"
+                  : "bg-amber-950/60 text-amber-300 border-amber-800 hover:bg-amber-900/60"
+              }`}
+            >
+              <Crown className="w-3 h-3" />
+              {PLANS[resolvePlanTier(currentFirm.plan)].name}
+            </Link>
+          )}
         </div>
 
         {/* Center: 1-Click Role Switcher */}

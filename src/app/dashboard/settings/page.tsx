@@ -19,6 +19,7 @@ import {
   Lock
 } from "lucide-react";
 import Link from "next/link";
+import { useFirmPlan, LockedFeatureCard } from "@/components/shared/FeatureGate";
 
 const PRESET_COLORS = [
   { name: "Electric Royal Blue", hex: "#0066FF" },
@@ -33,6 +34,8 @@ const PRESET_COLORS = [
 export default function FirmSettingsPage() {
   const { currentUser, role } = useAuth();
   const { currentFirm, updateCurrentFirm, refreshFirms } = useTenant();
+  const { can } = useFirmPlan();
+  const brandingUnlocked = can("custom_branding");
 
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -68,7 +71,8 @@ export default function FirmSettingsPage() {
     updateCurrentFirm({
       name: name.trim(),
       slug: slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-"),
-      primaryColor,
+      // Custom brand color is a Professional feature — Starter keeps the default.
+      primaryColor: brandingUnlocked ? primaryColor : currentFirm.primaryColor,
       contactEmail: contactEmail.trim(),
       phone: phone.trim(),
       address: address.trim(),
@@ -185,12 +189,15 @@ export default function FirmSettingsPage() {
             <label className="block text-xs font-semibold text-slate-700 mb-2">
               Primary Brand Accent Color
             </label>
+            {!brandingUnlocked && (
+              <LockedFeatureCard feature="custom_branding" compact className="mb-3" />
+            )}
             <div className="flex flex-wrap items-center gap-3">
               {PRESET_COLORS.map((c) => (
                 <button
                   key={c.hex}
                   type="button"
-                  disabled={!isAdmin}
+                  disabled={!isAdmin || !brandingUnlocked}
                   onClick={() => setPrimaryColor(c.hex)}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all duration-150 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent ${
                     primaryColor.toLowerCase() === c.hex.toLowerCase()
@@ -210,14 +217,14 @@ export default function FirmSettingsPage() {
                 <span className="text-slate-500">Custom HEX:</span>
                 <input
                   type="color"
-                  disabled={!isAdmin}
+                  disabled={!isAdmin || !brandingUnlocked}
                   value={primaryColor}
                   onChange={(e) => setPrimaryColor(e.target.value)}
                   className="w-8 h-8 rounded border border-slate-300 cursor-pointer p-0.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <input
                   type="text"
-                  disabled={!isAdmin}
+                  disabled={!isAdmin || !brandingUnlocked}
                   value={primaryColor}
                   onChange={(e) => setPrimaryColor(e.target.value)}
                   className="w-20 px-2 py-1 border border-slate-300 rounded text-xs font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none disabled:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"

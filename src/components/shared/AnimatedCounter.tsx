@@ -42,7 +42,10 @@ export default function AnimatedCounter({
         observer.disconnect();
         const start = performance.now();
         const tick = (now: number) => {
-          const progress = Math.min(1, (now - start) / duration);
+          // Clamp at 0 as well as 1: the rAF frame timestamp can precede the
+          // `start` captured a moment earlier, which would otherwise yield a
+          // negative eased value and briefly render as "-0.0".
+          const progress = Math.max(0, Math.min(1, (now - start) / duration));
           const eased = 1 - Math.pow(1 - progress, 3);
           setDisplay(value * eased);
           if (progress < 1) {

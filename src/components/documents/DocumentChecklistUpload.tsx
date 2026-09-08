@@ -23,6 +23,8 @@ interface DocumentChecklistUploadProps {
   onUpload: (checklistItemId: string, fileInfo: { fileName: string; fileUrl: string; fileSize: number; fileType: string }) => void;
   brandColor?: string;
   readOnly?: boolean;
+  /** Whether the firm's plan includes AI extraction (controls the "automatically scanned" note). */
+  aiExtractionUnlocked?: boolean;
 }
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
@@ -40,6 +42,7 @@ export default function DocumentChecklistUpload({
   onUpload,
   brandColor = "#0066FF",
   readOnly = false,
+  aiExtractionUnlocked = true,
 }: DocumentChecklistUploadProps) {
   const toast = useToast();
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<ChecklistItem | null>(null);
@@ -209,7 +212,7 @@ export default function DocumentChecklistUpload({
             )}
 
             {/* AI Extraction Confirmation (client-facing, no internal cross-check detail) */}
-            {item.extraction && (
+            {item.extraction && aiExtractionUnlocked && (
               <div className="mb-3 flex items-center gap-1.5 text-[11px] text-brand-700 bg-brand-50 border border-brand-200/70 rounded-lg px-2.5 py-1.5">
                 <Sparkles className="w-3 h-3 shrink-0" />
                 <span>

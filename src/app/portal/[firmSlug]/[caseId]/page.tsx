@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { DataStore } from "@/lib/store/dataStore";
+import { hasFeature } from "@/lib/billing/plans";
 import { Firm, ClientCase, FormTemplate } from "@/lib/types";
 import DynamicFormRenderer from "@/components/forms/DynamicFormRenderer";
 import DocumentChecklistUpload from "@/components/documents/DocumentChecklistUpload";
@@ -494,6 +495,7 @@ export default function ClientPortalPage() {
                 clientName={clientCase.clientName}
                 onUpload={handleDocumentUpload}
                 brandColor={brandPrimary}
+                aiExtractionUnlocked={hasFeature(firm.plan, "ai_extraction")}
               />
 
               <div className="pt-4 border-t border-slate-100 flex items-center justify-between">

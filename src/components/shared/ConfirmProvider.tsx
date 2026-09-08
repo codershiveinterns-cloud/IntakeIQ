@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
 interface ConfirmOptions {
@@ -47,6 +47,17 @@ export default function ConfirmProvider({ children }: { children: React.ReactNod
     setPending(null);
   };
 
+  // Escape cancels, matching the behaviour of every other modal in the app.
+  useEffect(() => {
+    if (!pending) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") settle(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pending]);
+
   return (
     <ConfirmContext.Provider value={confirm}>
       {children}
@@ -56,6 +67,10 @@ export default function ConfirmProvider({ children }: { children: React.ReactNod
           onClick={() => settle(false)}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-dialog-title"
+            aria-describedby="confirm-dialog-message"
             className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
@@ -67,8 +82,8 @@ export default function ConfirmProvider({ children }: { children: React.ReactNod
               >
                 <AlertTriangle className="w-5 h-5" />
               </div>
-              <h3 className="text-lg font-bold text-slate-900">{pending.title}</h3>
-              <p className="text-sm text-slate-600 leading-relaxed">{pending.message}</p>
+              <h3 id="confirm-dialog-title" className="text-lg font-bold text-slate-900">{pending.title}</h3>
+              <p id="confirm-dialog-message" className="text-sm text-slate-600 leading-relaxed">{pending.message}</p>
             </div>
             <div className="px-6 pb-6 flex items-center justify-end gap-2.5">
               <button

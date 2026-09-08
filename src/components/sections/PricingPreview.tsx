@@ -3,75 +3,28 @@
 import React, { useState } from "react";
 import { Check, ArrowRight } from "lucide-react";
 import Reveal from "../shared/Reveal";
+import { PLANS, PLAN_ORDER, priceFor, formatUsd } from "@/lib/billing/plans";
+import { BillingCycle } from "@/lib/types";
 
 interface PricingPreviewProps {
   onRequestDemo: (plan?: string) => void;
 }
 
-export default function PricingPreview({ onRequestDemo }: PricingPreviewProps) {
-  const [billingCycle, setBillingCycle] = useState<"annual" | "monthly">("annual");
+// CTA copy per tier; prices, bullets, and feature gates all come from lib/billing/plans.ts
+// so the marketing page can never drift from what the app actually unlocks.
+const CTA_TEXT: Record<string, string> = {
+  starter: "Get Started",
+  professional: "Request Firm Demo",
+  enterprise: "Get Started",
+};
 
-  const plans = [
-    {
-      name: "Starter",
-      badge: "For Boutique Practices",
-      priceMonthly: 89,
-      priceAnnual: 69,
-      description: "Everything you need to replace email onboarding for up to 5 team members.",
-      features: [
-        "Up to 5 firm staff & case managers",
-        "Unlimited client onboarding portals",
-        "Dynamic form builder with standard templates",
-        "Document checklists with required/optional flags",
-        "Document version history (v1, v2 lineage)",
-        "Manual approve/reject review workflow",
-        "Standard email status notifications",
-      ],
-      ctaText: "Get Started",
-      highlighted: false,
-    },
-    {
-      name: "Professional",
-      badge: "Most Popular",
-      priceMonthly: 199,
-      priceAnnual: 159,
-      description: "For growing accounting, legal, and advisory firms managing high client volume.",
-      features: [
-        "Up to 20 firm staff & case managers",
-        "Custom firm subdomain (e.g. portal.firm.com)",
-        "Full custom branding (logo, theme palette)",
-        "Advanced conditional logic form branching",
-        "Full immutable action audit trail",
-        "Admin case tracking dashboard with pipeline filters",
-        "Role-based permissions (Admin, Manager, Staff)",
-        "Priority onboarding support",
-      ],
-      ctaText: "Request Firm Demo",
-      highlighted: true,
-    },
-    {
-      name: "Enterprise",
-      badge: "Multi-Partner & Large Firms",
-      priceMonthly: null,
-      priceAnnual: null,
-      description: "Dedicated tenant clusters, custom legal agreements, and customized onboarding configurations.",
-      features: [
-        "Unlimited firm staff & branch locations",
-        "Multiple firm workspaces under one master parent",
-        "Dedicated per-tenant database isolation option",
-        "Custom master intake templates assistance",
-        "Dedicated account manager & staff training",
-        "99.9% uptime SLA guarantee",
-      ],
-      ctaText: "Contact Enterprise Sales",
-      highlighted: false,
-    },
-  ];
+export default function PricingPreview({ onRequestDemo }: PricingPreviewProps) {
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>("annual");
 
   return (
     <section id="pricing" className="py-20 bg-slate-50 border-t border-slate-200/80 scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Header */}
         <Reveal className="text-center max-w-3xl mx-auto mb-12 space-y-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-50 border border-brand-200/80 text-brand-700 text-xs font-semibold">
@@ -81,7 +34,7 @@ export default function PricingPreview({ onRequestDemo }: PricingPreviewProps) {
             Predictable Plans for Growing Firms
           </h2>
           <p className="text-base text-slate-600 leading-relaxed">
-            All plans include unlimited client portal participants and secure file storage.
+            All plans include unlimited client portal participants and secure file storage. Upgrade anytime — new features unlock instantly.
           </p>
 
           {/* Billing Switcher */}
@@ -115,11 +68,12 @@ export default function PricingPreview({ onRequestDemo }: PricingPreviewProps) {
 
         {/* Pricing Cards */}
         <Reveal delay={100} className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-          {plans.map((plan, idx) => {
-            const price = billingCycle === "annual" ? plan.priceAnnual : plan.priceMonthly;
+          {PLAN_ORDER.map((tier) => {
+            const plan = PLANS[tier];
+            const price = priceFor(tier, billingCycle);
             return (
               <div
-                key={idx}
+                key={tier}
                 className={`rounded-2xl p-7 flex flex-col justify-between transition-all duration-200 relative ${
                   plan.highlighted
                     ? "bg-white border-2 border-brand-500 shadow-xl shadow-brand-500/10 lg:-translate-y-2"
@@ -148,24 +102,17 @@ export default function PricingPreview({ onRequestDemo }: PricingPreviewProps) {
 
                   {/* Price */}
                   <div className="py-4 border-y border-slate-100 mb-6">
-                    {price !== null ? (
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-extrabold text-slate-900 tracking-tight font-mono">
-                          ${price}
-                        </span>
-                        <span className="text-xs text-slate-500 font-medium">/ month</span>
-                        <span className="text-[11px] text-slate-400 block ml-1">
-                          (billed {billingCycle})
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                        Custom
-                        <span className="text-xs text-slate-500 font-normal block">
-                          Tailored to your firm size
-                        </span>
-                      </div>
-                    )}
+                    <div className="flex items-baseline gap-1 flex-wrap">
+                      <span className="text-4xl font-extrabold text-slate-900 tracking-tight font-mono">
+                        {formatUsd(price)}
+                      </span>
+                      <span className="text-xs text-slate-500 font-medium">/ month</span>
+                      <span className="text-[11px] text-slate-400 block ml-1">
+                        {billingCycle === "annual"
+                          ? `(${formatUsd(plan.priceAnnual * 12)} billed annually)`
+                          : "(billed monthly)"}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Feature Bullets */}
@@ -173,8 +120,8 @@ export default function PricingPreview({ onRequestDemo }: PricingPreviewProps) {
                     <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                       Included in {plan.name}:
                     </p>
-                    {plan.features.map((feat, fIdx) => (
-                      <div key={fIdx} className="flex items-start gap-2.5 text-xs text-slate-600">
+                    {plan.bullets.map((feat) => (
+                      <div key={feat} className="flex items-start gap-2.5 text-xs text-slate-600">
                         <Check className="w-4 h-4 text-brand-500 shrink-0 mt-0.5" />
                         <span>{feat}</span>
                       </div>
@@ -192,7 +139,7 @@ export default function PricingPreview({ onRequestDemo }: PricingPreviewProps) {
                         : "bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800"
                     }`}
                   >
-                    <span>{plan.ctaText}</span>
+                    <span>{CTA_TEXT[tier]}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
