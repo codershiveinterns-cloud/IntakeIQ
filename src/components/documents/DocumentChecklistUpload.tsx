@@ -62,17 +62,15 @@ export default function DocumentChecklistUpload({
       return;
     }
 
-    const isValidType = ALLOWED_MIME_TYPES.includes(file.type) ||
-      file.name.endsWith(".pdf") ||
-      file.name.endsWith(".png") ||
-      file.name.endsWith(".jpg") ||
-      file.name.endsWith(".jpeg") ||
-      file.name.endsWith(".docx");
+    const lowerName = file.name.toLowerCase();
+    const isValidType =
+      ALLOWED_MIME_TYPES.includes(file.type) ||
+      [".pdf", ".png", ".jpg", ".jpeg", ".docx", ".doc"].some((ext) => lowerName.endsWith(ext));
 
     if (!isValidType) {
-      const msg = "Invalid file format. Please upload a PDF, JPG, PNG, or DOCX.";
+      const msg = "Invalid file format. Please upload a PDF, JPG, PNG, DOC, or DOCX.";
       setUploadErrors((prev) => ({ ...prev, [itemId]: msg }));
-      toast.error("Invalid file format. Please upload PDF, JPG, PNG, or DOCX documents.");
+      toast.error("Invalid file format. Please upload PDF, JPG, PNG, DOC, or DOCX documents.");
       return;
     }
 
@@ -84,15 +82,29 @@ export default function DocumentChecklistUpload({
     });
     setUploadingItemId(itemId);
 
-    // Simulate realistic upload & create blob url
-    setTimeout(() => {
-      const simulatedUrl = URL.createObjectURL(file);
+    // Simulate a realistic upload. Small files are kept as data URLs so their
+    // preview links survive a reload; larger ones use a session-only object
+    // URL to stay well inside the browser's localStorage quota.
+    const DURABLE_PREVIEW_LIMIT = 400 * 1024;
+    const finish = (fileUrl: string) => {
       onUpload(itemId, {
         fileName: file.name,
-        fileUrl: simulatedUrl,
+        fileUrl,
         fileSize: file.size,
         fileType: file.type || "application/octet-stream",
       });
+    };
+    const resolveUrl = (): Promise<string> =>
+      new Promise((resolve) => {
+        if (file.size > DURABLE_PREVIEW_LIMIT) return resolve(URL.createObjectURL(file));
+        const reader = new FileReader();
+        reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : URL.createObjectURL(file));
+        reader.onerror = () => resolve(URL.createObjectURL(file));
+        reader.readAsDataURL(file);
+      });
+    setTimeout(async () => {
+      const simulatedUrl = await resolveUrl();
+      finish(simulatedUrl);
       setUploadingItemId(null);
     }, 800);
   };
@@ -296,7 +308,7 @@ export default function DocumentChecklistUpload({
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-500">
-                        PDF, JPG, PNG, DOCX up to 25MB • Scoped encrypted storage
+                        PDF, JPG, PNG, DOC, DOCX up to 25MB • Scoped encrypted storage
                       </p>
                     </>
                   )}

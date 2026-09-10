@@ -66,6 +66,10 @@ export default function TeamPage() {
       toast.error("Please provide member name and email.");
       return;
     }
+    if (DataStore.getUserByEmail(inviteEmail)) {
+      toast.error("An account with that email already exists. Use a different address or re-send their activation link.");
+      return;
+    }
     if (seatLimitReached) {
       toast.error(
         `Your ${plan.name} plan includes up to ${seatLimit} team members. Upgrade in Billing & Plans to add more.`
@@ -255,8 +259,12 @@ export default function TeamPage() {
           aria-modal="true"
           aria-labelledby="invite-modal-title"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in"
+          onClick={() => setIsInviteModalOpen(false)}
         >
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-5 border border-slate-200 space-y-4 text-xs">
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-5 border border-slate-200 space-y-4 text-xs"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <UserPlus className="w-4 h-4 text-brand-600" />

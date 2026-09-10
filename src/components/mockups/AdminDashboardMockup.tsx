@@ -64,6 +64,7 @@ export default function AdminDashboardMockup() {
   const filteredCases = cases.filter((c) => {
     const matchesStage = selectedStage === "All" || c.stage === selectedStage;
     const matchesQuery =
+      c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.firmName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.template.toLowerCase().includes(searchQuery.toLowerCase());

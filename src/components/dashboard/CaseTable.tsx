@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { ClientCase } from "@/lib/types";
 import StatusBadge from "../shared/StatusBadge";
 import { useTenant } from "@/lib/context/TenantContext";
+import { useAuth } from "@/lib/context/AuthContext";
+import { hasPermission } from "@/lib/auth/permissions";
 import { useToast } from "@/components/shared/ToastProvider";
 import {
   FileText,
@@ -27,6 +29,7 @@ interface CaseTableProps {
 
 export default function CaseTable({ cases }: CaseTableProps) {
   const { currentFirm } = useTenant();
+  const { role } = useAuth();
   const router = useRouter();
   const toast = useToast();
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
@@ -54,13 +57,15 @@ export default function CaseTable({ cases }: CaseTableProps) {
         <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
           Try adjusting your search query or status filter, or create a new case to get started.
         </p>
-        <Link
-          href="/dashboard/cases/new"
-          className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-brand-500 hover:brightness-110 rounded-lg shadow-sm transition-all duration-150 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Create New Case</span>
-        </Link>
+        {hasPermission(role, "cases:create") && (
+          <Link
+            href="/dashboard/cases/new"
+            className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-brand-500 hover:brightness-110 rounded-lg shadow-sm transition-all duration-150 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Create New Case</span>
+          </Link>
+        )}
       </div>
     );
   }

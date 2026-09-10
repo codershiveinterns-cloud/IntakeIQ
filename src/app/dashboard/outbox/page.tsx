@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGate from "@/components/shared/PermissionGate";
+
 import React, { useState, useEffect } from "react";
 import { useTenant } from "@/lib/context/TenantContext";
 import { DataStore } from "@/lib/store/dataStore";
@@ -18,7 +20,7 @@ import {
   Inbox
 } from "lucide-react";
 
-export default function EmailOutboxPage() {
+function EmailOutboxPageInner() {
   const { currentFirm } = useTenant();
   const [emails, setEmails] = useState<EmailNotification[]>([]);
   const [search, setSearch] = useState("");
@@ -212,8 +214,12 @@ export default function EmailOutboxPage() {
           aria-modal="true"
           aria-labelledby="email-modal-title"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in"
+          onClick={() => setSelectedEmail(null)}
         >
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 text-xs">
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 text-xs"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
             <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <div className="flex items-center gap-2">
@@ -295,5 +301,13 @@ export default function EmailOutboxPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function EmailOutboxPage() {
+  return (
+    <PermissionGate permission="outbox:view">
+      <EmailOutboxPageInner />
+    </PermissionGate>
   );
 }

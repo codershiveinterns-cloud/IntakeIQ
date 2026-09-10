@@ -44,7 +44,9 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   // Prefer a case that actually belongs to the active firm so the portal
   // quick-links never point at a case owned by a different tenant.
   const firmCases = currentFirm ? DataStore.getCases(currentFirm.id) : [];
-  const portalCaseId = firmCases[0]?.id || "case-101";
+  const portalCaseId = firmCases[0]?.id ?? null;
+  // With no cases yet, the portal quick-link sends staff to create the first case instead.
+  const portalHref = portalCaseId ? `/portal/${currentFirm?.slug}/${portalCaseId}` : "/dashboard/cases/new";
 
   const handleLogout = () => {
     logout();
@@ -232,7 +234,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           Client Portal
         </div>
         <Link
-          href={`/portal/${currentFirm?.slug || "apex-advisory"}/${portalCaseId}`}
+          href={portalHref}
           target="_blank"
           className="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-cyan-300 hover:bg-cyan-950/40 border border-cyan-900/50 transition-all duration-150 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
         >

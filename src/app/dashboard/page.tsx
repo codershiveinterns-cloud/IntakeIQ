@@ -215,7 +215,7 @@ export default function DashboardPage() {
       {viewMode === "table" || !kanbanUnlocked ? (
         <CaseTable cases={filteredCases} onRefresh={refreshCases} />
       ) : (
-        <CaseKanban cases={filteredCases} />
+        <CaseKanban cases={filteredCases} onStatusChange={refreshCases} />
       )}
     </div>
   );

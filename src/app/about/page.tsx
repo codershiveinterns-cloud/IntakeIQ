@@ -39,9 +39,13 @@ export default function AboutPage() {
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
 
   const handleCopy = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedEmail(text);
-    toast.success(`${label} copied to clipboard!`);
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        setCopiedEmail(text);
+        toast.success(`${label} copied to clipboard!`);
+      })
+      .catch(() => toast.error(`Couldn't copy automatically — ${text}`));
     setTimeout(() => {
       setCopiedEmail(null);
     }, 2000);
@@ -377,7 +381,7 @@ export default function AboutPage() {
                 <ArrowRight className="w-4 h-4" />
               </button>
               <Link
-                href="/dashboard"
+                href="/auth/login"
                 className="w-full sm:w-auto px-7 py-3.5 text-base font-semibold text-slate-200 hover:text-white bg-slate-800/80 hover:bg-slate-800 border border-slate-700 rounded-xl transition flex items-center justify-center gap-2"
               >
                 <span>Explore Live Platform</span>

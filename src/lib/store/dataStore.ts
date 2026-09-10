@@ -602,7 +602,8 @@ export class DataStore {
   ): ClientCase {
     const cases = getLocalItem<ClientCase[]>(STORAGE_KEYS.CASES, INITIAL_CASES);
     const now = new Date().toISOString();
-    const caseId = `case-${Date.now().toString().slice(-4)}`;
+    // Collision-safe but still short enough to read out to a client as a reference.
+    const caseId = `case-${Date.now().toString(36).slice(-6)}${Math.random().toString(36).slice(2, 4)}`;
     const portalToken = `pt-${Math.random().toString(36).substring(2, 10)}`;
 
     const newCase: ClientCase = {
@@ -708,13 +709,19 @@ export class DataStore {
     if (!c) throw new Error("Case not found");
 
     const isAllDocsUploaded = c.checklist.every(item => !item.required || item.status === "Approved" || item.status === "Uploaded");
-    const nextStatus: CaseStatus = isAllDocsUploaded ? "Under Review" : "Documents Pending";
+    // An approved case keeps its decision; amended answers are recorded but do not reopen review.
+    const alreadyApproved = c.status === "Approved";
+    const nextStatus: CaseStatus = alreadyApproved ? "Approved" : isAllDocsUploaded ? "Under Review" : "Documents Pending";
 
-    const updated = this.updateCase(caseId, {
-      formResponses: responses,
-      formSubmittedAt: new Date().toISOString(),
-      status: nextStatus
-    });
+    const updated = this.updateCase(
+      caseId,
+      {
+        formResponses: responses,
+        formSubmittedAt: c.formSubmittedAt || new Date().toISOString(),
+        status: nextStatus
+      },
+      { id: actorId, name: actorName, role: "Client", email: c.clientEmail, firmId: c.firmId, createdAt: c.createdAt }
+    );
 
     this.addAuditLog({
       firmId: c.firmId,
@@ -723,10 +730,12 @@ export class DataStore {
       actorId,
       actorName,
       actorRole: "Client",
-      action: "Form Submitted",
+      action: alreadyApproved ? "Form Responses Amended" : "Form Submitted",
       targetEntity: "Client Intake Form",
-      details: `Completed and submitted form responses.`
+      details: alreadyApproved ? `Updated form responses on an approved case.` : `Completed and submitted form responses.`
     });
+
+    if (alreadyApproved) return updated;
 
     // Notify assigned staff
     const firm = this.getFirmById(c.firmId);
@@ -749,6 +758,20 @@ export class DataStore {
     });
 
     return updated;
+  }
+
+  /**
+   * After an upload, a case only moves to "Under Review" once every required
+   * document is in — the same rule submitFormAnswers uses — and a case that
+   * has already been decided is never reopened by a stray upload.
+   */
+  private static deriveStatusAfterUpload(c: ClientCase, checklist: ChecklistItem[]): CaseStatus {
+    if (c.status === "Approved" || c.status === "Rejected") return c.status;
+    if (!c.formSubmittedAt) return c.status;
+    const allRequiredIn = checklist.every(
+      (i) => !i.required || i.status === "Uploaded" || i.status === "Approved"
+    );
+    return allRequiredIn ? "Under Review" : "Documents Pending";
   }
 
   public static uploadDocument(
@@ -792,10 +815,14 @@ export class DataStore {
 
     checklist[itemIndex] = updatedItem;
 
-    const updated = this.updateCase(caseId, {
-      checklist,
-      status: c.formSubmittedAt ? "Under Review" : c.status
-    });
+    const updated = this.updateCase(
+      caseId,
+      {
+        checklist,
+        status: this.deriveStatusAfterUpload(c, checklist),
+      },
+      { id: fileInfo.actorId, name: fileInfo.uploadedBy, role: "Client", email: c.clientEmail, firmId: c.firmId, createdAt: c.createdAt }
+    );
 
     this.addAuditLog({
       firmId: c.firmId,
@@ -893,7 +920,7 @@ export class DataStore {
     const updated = this.updateCase(caseId, {
       checklist,
       status: newCaseStatus
-    });
+    }, reviewer);
 
     this.addAuditLog({
       firmId: c.firmId,
@@ -1030,7 +1057,12 @@ export class DataStore {
       l.targetEntity,
       l.details || "",
     ]);
-    const escape = (val: string) => `"${String(val).replace(/"/g, '""')}"`;
+    // Cells that start with a formula trigger are prefixed so spreadsheets treat them as text.
+    const escape = (val: string) => {
+      let str = String(val ?? "");
+      if (/^[=+\-@\t\r]/.test(str)) str = `'${str}`;
+      return `"${str.replace(/"/g, '""')}"`;
+    };
     return [header, ...rows].map((row) => row.map(escape).join(",")).join("\n");
   }
 }

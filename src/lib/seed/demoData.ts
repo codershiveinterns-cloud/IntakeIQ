@@ -592,16 +592,6 @@ export const INITIAL_NOTIFICATIONS: AppNotification[] = [
     createdAt: "2026-02-19T10:30:00Z",
   },
   {
-    id: "notif-3",
-    firmId: "firm-apex",
-    type: "extraction_flagged",
-    title: "AI extraction flagged an issue",
-    message: "\"Government ID / Passport of Primary Officers\" on David Chen's case needs manual review — 0 of 1 verifiable field matched form responses — 1 flagged for review.",
-    caseId: "case-101",
-    read: false,
-    createdAt: "2026-02-18T16:52:30Z",
-  },
-  {
     id: "notif-4",
     firmId: "firm-apex",
     type: "doc_rejected",

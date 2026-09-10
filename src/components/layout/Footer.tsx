@@ -103,30 +103,30 @@ export default function Footer({ onRequestDemo }: { onRequestDemo: () => void })
               <span>TLS 1.3 Encryption • Per-Tenant Schema Isolation</span>
             </div>
             <div className="flex items-center space-x-3 pt-2">
-              <a
-                href="#"
+              <button
+                type="button"
                 onClick={notifyComingSoon("Our LinkedIn page")}
                 className="w-8 h-8 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors duration-150 border border-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                 aria-label="LinkedIn"
               >
                 <Linkedin className="w-4 h-4" />
-              </a>
-              <a
-                href="#"
+              </button>
+              <button
+                type="button"
                 onClick={notifyComingSoon("Our Twitter page")}
                 className="w-8 h-8 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors duration-150 border border-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                 aria-label="Twitter"
               >
                 <Twitter className="w-4 h-4" />
-              </a>
-              <a
-                href="#"
+              </button>
+              <button
+                type="button"
                 onClick={notifyComingSoon("Our GitHub page")}
                 className="w-8 h-8 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors duration-150 border border-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                 aria-label="GitHub"
               >
                 <Github className="w-4 h-4" />
-              </a>
+              </button>
             </div>
           </div>
 
@@ -137,32 +137,32 @@ export default function Footer({ onRequestDemo }: { onRequestDemo: () => void })
             </h4>
             <ul className="space-y-2.5 text-xs">
               <li>
-                <a href="#feature-portal" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
+                <a href="/#feature-portal" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                   Client Portal
                 </a>
               </li>
               <li>
-                <a href="#feature-forms" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
+                <a href="/#feature-forms" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                   Dynamic Form Builder
                 </a>
               </li>
               <li>
-                <a href="#feature-documents" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
+                <a href="/#feature-documents" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                   Document Checklists
                 </a>
               </li>
               <li>
-                <a href="#feature-documents" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
+                <a href="/#feature-documents" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                   Version History
                 </a>
               </li>
               <li>
-                <a href="#feature-workflow" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
+                <a href="/#feature-workflow" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                   Approval Workflow
                 </a>
               </li>
               <li>
-                <a href="#feature-admin" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
+                <a href="/#feature-admin" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                   Case Tracking Dashboard
                 </a>
               </li>
@@ -176,27 +176,27 @@ export default function Footer({ onRequestDemo }: { onRequestDemo: () => void })
             </h4>
             <ul className="space-y-2.5 text-xs">
               <li>
-                <a href="#industries" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
+                <a href="/#industries" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                   Accounting & CA Firms
                 </a>
               </li>
               <li>
-                <a href="#industries" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
+                <a href="/#industries" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                   Law Firms & Legal Practices
                 </a>
               </li>
               <li>
-                <a href="#industries" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
+                <a href="/#industries" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                   Financial Advisories
                 </a>
               </li>
               <li>
-                <a href="#industries" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
+                <a href="/#industries" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                   Client Services Agencies
                 </a>
               </li>
               <li>
-                <a href="#industries" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
+                <a href="/#industries" className="hover:text-white transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                   Multi-Partner Practices
                 </a>
               </li>
@@ -265,17 +265,17 @@ export default function Footer({ onRequestDemo }: { onRequestDemo: () => void })
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 border-t border-slate-800 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-3">
         <p>© {new Date().getFullYear()} IntakeIQ Technologies Inc. All rights reserved.</p>
         <p className="flex items-center gap-4">
-          <a href="#security" className="hover:text-slate-400 transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">Security Policy</a>
+          <a href="/#security" className="hover:text-slate-400 transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">Security Policy</a>
           <span>•</span>
-          <a href="#security" className="hover:text-slate-400 transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">Confidentiality</a>
+          <a href="/#security" className="hover:text-slate-400 transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">Confidentiality</a>
           <span>•</span>
-          <a
-            href="#"
+          <button
+            type="button"
             onClick={notifyComingSoon("Our System Status page")}
             className="hover:text-slate-400 transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
           >
             System Status
-          </a>
+          </button>
         </p>
       </div>
     </footer>

@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGate from "@/components/shared/PermissionGate";
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/lib/context/AuthContext";
 import { useTenant } from "@/lib/context/TenantContext";
@@ -31,7 +33,7 @@ const PRESET_COLORS = [
   { name: "Burgundy Wine", hex: "#9F1239" },
 ];
 
-export default function FirmSettingsPage() {
+function FirmSettingsPageInner() {
   const { currentUser, role } = useAuth();
   const { currentFirm, updateCurrentFirm, refreshFirms } = useTenant();
   const { can } = useFirmPlan();
@@ -45,7 +47,7 @@ export default function FirmSettingsPage() {
   const [address, setAddress] = useState("");
   const [industry, setIndustry] = useState<any>("Law & Legal");
   const [isSaved, setIsSaved] = useState(false);
-  const [previewCaseId, setPreviewCaseId] = useState("case-101");
+  const [previewCaseId, setPreviewCaseId] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentFirm) {
@@ -58,9 +60,7 @@ export default function FirmSettingsPage() {
       setIndustry(currentFirm.industry || "Law & Legal");
 
       const cases = DataStore.getCases(currentFirm.id);
-      if (cases.length > 0) {
-        setPreviewCaseId(cases[0].id);
-      }
+      setPreviewCaseId(cases[0]?.id ?? null);
     }
   }, [currentFirm?.id]);
 
@@ -86,7 +86,9 @@ export default function FirmSettingsPage() {
       actorRole: currentUser.role,
       action: "Firm Settings Updated",
       targetEntity: name.trim(),
-      details: `Updated branding color to ${primaryColor} and slug to /${slug}.`
+      details: brandingUnlocked
+        ? `Updated branding color to ${primaryColor} and slug to /${slug}.`
+        : `Updated firm profile and slug to /${slug} (branding colour unchanged — Professional feature).`
     });
 
     setIsSaved(true);
@@ -109,7 +111,8 @@ export default function FirmSettingsPage() {
         </div>
 
         <Link
-          href={`/portal/${slug || currentFirm?.slug || "apex-advisory"}/${previewCaseId}`}
+          href={previewCaseId ? `/portal/${currentFirm?.slug}/${previewCaseId}` : "/dashboard/cases/new"}
+          title={previewCaseId ? "Preview the branded portal using your most recent case" : "Create a case first to preview the client portal"}
           target="_blank"
           className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-xl border border-brand-200 transition-all duration-150 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 self-start sm:self-auto"
         >
@@ -347,5 +350,13 @@ export default function FirmSettingsPage() {
         )}
       </form>
     </div>
+  );
+}
+
+export default function FirmSettingsPage() {
+  return (
+    <PermissionGate permission="settings:view">
+      <FirmSettingsPageInner />
+    </PermissionGate>
   );
 }

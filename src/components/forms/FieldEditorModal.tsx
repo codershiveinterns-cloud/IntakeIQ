@@ -106,10 +106,11 @@ export default function FieldEditorModal({
 
     let condition: FieldCondition | undefined = undefined;
     if (hasCondition && triggerFieldId) {
+      const valueless = operator === "is_checked" || operator === "is_not_checked" || operator === "is_empty" || operator === "is_not_empty";
       condition = {
         triggerFieldId,
         operator,
-        value: conditionValue,
+        value: valueless ? "" : conditionValue,
       };
     }
 

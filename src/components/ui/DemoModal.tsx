@@ -28,7 +28,7 @@ export default function DemoModal({ isOpen, onClose, initialPlan = null }: DemoM
     workEmail: "",
     firmName: "",
     firmType: "Accounting & CA Firm",
-    firmSize: "11-50 team members",
+    firmSize: "11 - 50 team members",
   });
 
   const industryLabel = typeof initialPlan === "string" ? INDUSTRY_ID_TO_LABEL[initialPlan] : undefined;
@@ -39,13 +39,29 @@ export default function DemoModal({ isOpen, onClose, initialPlan = null }: DemoM
     setFormData((prev) => ({ ...prev, firmType: industryLabel }));
   }, [isOpen, industryLabel]);
 
+  // Every open starts on the form (never on a stale success screen), locks
+  // background scroll, and moves focus into the dialog for keyboard users.
   useEffect(() => {
     if (!isOpen) return;
+    setSubmitted(false);
+    setIsSubmitting(false);
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusTimer = window.setTimeout(() => {
+      const first = document.querySelector<HTMLElement>("#demo-modal-first-field");
+      first?.focus();
+    }, 50);
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.clearTimeout(focusTimer);
+      document.body.style.overflow = prevOverflow;
+      previouslyFocused?.focus?.();
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -140,7 +156,8 @@ export default function DemoModal({ isOpen, onClose, initialPlan = null }: DemoM
                 <div className="relative">
                   <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
-                    type="text"
+                    id="demo-modal-first-field"
+                  type="text"
                     required
                     value={formData.firstName}
                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}

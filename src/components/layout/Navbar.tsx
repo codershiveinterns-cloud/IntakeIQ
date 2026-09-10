@@ -59,6 +59,7 @@ export default function Navbar({ onRequestDemo, onOpenLogin }: NavbarProps) {
       if (e.key === "Escape") {
         setProductOpen(false);
         setIndustriesOpen(false);
+        setMobileMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", onPointerDown);
@@ -115,7 +116,7 @@ export default function Navbar({ onRequestDemo, onOpenLogin }: NavbarProps) {
               {productOpen && (
                 <div className="absolute top-full left-0 w-80 bg-white rounded-xl shadow-dropdown border border-slate-200/80 p-2.5 mt-1 animate-fade-in">
                   <a
-                    href="#feature-portal"
+                    href="/#feature-portal"
                     onClick={() => setProductOpen(false)}
                     className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 group"
                   >
@@ -133,7 +134,7 @@ export default function Navbar({ onRequestDemo, onOpenLogin }: NavbarProps) {
                   </a>
 
                   <a
-                    href="#feature-forms"
+                    href="/#feature-forms"
                     onClick={() => setProductOpen(false)}
                     className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 group"
                   >
@@ -151,7 +152,7 @@ export default function Navbar({ onRequestDemo, onOpenLogin }: NavbarProps) {
                   </a>
 
                   <a
-                    href="#feature-documents"
+                    href="/#feature-documents"
                     onClick={() => setProductOpen(false)}
                     className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 group"
                   >
@@ -169,7 +170,7 @@ export default function Navbar({ onRequestDemo, onOpenLogin }: NavbarProps) {
                   </a>
 
                   <a
-                    href="#feature-workflow"
+                    href="/#feature-workflow"
                     onClick={() => setProductOpen(false)}
                     className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 group"
                   >
@@ -187,7 +188,7 @@ export default function Navbar({ onRequestDemo, onOpenLogin }: NavbarProps) {
                   </a>
 
                   <a
-                    href="#feature-admin"
+                    href="/#feature-admin"
                     onClick={() => setProductOpen(false)}
                     className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 group"
                   >
@@ -223,7 +224,7 @@ export default function Navbar({ onRequestDemo, onOpenLogin }: NavbarProps) {
               {industriesOpen && (
                 <div className="absolute top-full left-0 w-80 bg-white rounded-xl shadow-dropdown border border-slate-200/80 p-2.5 mt-1 animate-fade-in">
                   <a
-                    href="#industries"
+                    href="/#industries"
                     onClick={() => setIndustriesOpen(false)}
                     className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 group"
                   >
@@ -241,7 +242,7 @@ export default function Navbar({ onRequestDemo, onOpenLogin }: NavbarProps) {
                   </a>
 
                   <a
-                    href="#industries"
+                    href="/#industries"
                     onClick={() => setIndustriesOpen(false)}
                     className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 group"
                   >
@@ -259,7 +260,7 @@ export default function Navbar({ onRequestDemo, onOpenLogin }: NavbarProps) {
                   </a>
 
                   <a
-                    href="#industries"
+                    href="/#industries"
                     onClick={() => setIndustriesOpen(false)}
                     className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 group"
                   >
@@ -277,7 +278,7 @@ export default function Navbar({ onRequestDemo, onOpenLogin }: NavbarProps) {
                   </a>
 
                   <a
-                    href="#industries"
+                    href="/#industries"
                     onClick={() => setIndustriesOpen(false)}
                     className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 group"
                   >
@@ -352,6 +353,7 @@ export default function Navbar({ onRequestDemo, onOpenLogin }: NavbarProps) {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
               aria-label="Toggle navigation menu"
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -364,35 +366,35 @@ export default function Navbar({ onRequestDemo, onOpenLogin }: NavbarProps) {
             <div className="space-y-1">
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-1">Product</p>
               <a
-                href="#feature-portal"
+                href="/#feature-portal"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 transition-colors duration-150 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
               >
                 Branded Client Portal
               </a>
               <a
-                href="#feature-forms"
+                href="/#feature-forms"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 transition-colors duration-150 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
               >
                 Dynamic Form Builder
               </a>
               <a
-                href="#feature-documents"
+                href="/#feature-documents"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 transition-colors duration-150 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
               >
                 Document Checklist & Versioning
               </a>
               <a
-                href="#feature-workflow"
+                href="/#feature-workflow"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 transition-colors duration-150 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
               >
                 Approval Workflow & Audit Trail
               </a>
               <a
-                href="#feature-admin"
+                href="/#feature-admin"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 transition-colors duration-150 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
               >
@@ -403,28 +405,28 @@ export default function Navbar({ onRequestDemo, onOpenLogin }: NavbarProps) {
             <div className="space-y-1 pt-2 border-t border-slate-100">
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-1">Industries</p>
               <a
-                href="#industries"
+                href="/#industries"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 transition-colors duration-150 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
               >
                 Accounting & CA Firms
               </a>
               <a
-                href="#industries"
+                href="/#industries"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 transition-colors duration-150 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
               >
                 Law Firms & Legal Practices
               </a>
               <a
-                href="#industries"
+                href="/#industries"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 transition-colors duration-150 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
               >
                 Wealth & Financial Advisories
               </a>
               <a
-                href="#industries"
+                href="/#industries"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 transition-colors duration-150 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
               >

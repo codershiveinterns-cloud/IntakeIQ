@@ -7,6 +7,7 @@ import { useTenant } from "@/lib/context/TenantContext";
 import { useAuth } from "@/lib/context/AuthContext";
 import { DataStore } from "@/lib/store/dataStore";
 import { useToast } from "@/components/shared/ToastProvider";
+import { hasPermission } from "@/lib/auth/permissions";
 import {
   Building2,
   ExternalLink,
@@ -32,7 +33,8 @@ const STAGES: { status: CaseStatus; label: string; headerColor: string }[] = [
 
 export default function CaseKanban({ cases, onStatusChange }: CaseKanbanProps) {
   const { currentFirm } = useTenant();
-  const { currentUser } = useAuth();
+  const { currentUser, role } = useAuth();
+  const canEdit = hasPermission(role, "cases:edit");
   const toast = useToast();
 
   // Optimistic per-card status overrides so dragging a card between columns
@@ -62,6 +64,7 @@ export default function CaseKanban({ cases, onStatusChange }: CaseKanbanProps) {
   );
 
   const handleDrop = (status: CaseStatus) => {
+    if (!canEdit) return;
     setDragOverStatus(null);
     const id = draggedId;
     setDraggedId(null);
@@ -126,7 +129,7 @@ export default function CaseKanban({ cases, onStatusChange }: CaseKanbanProps) {
                   return (
                     <div
                       key={c.id}
-                      draggable
+                      draggable={canEdit}
                       onDragStart={() => setDraggedId(c.id)}
                       onDragEnd={() => {
                         setDraggedId(null);

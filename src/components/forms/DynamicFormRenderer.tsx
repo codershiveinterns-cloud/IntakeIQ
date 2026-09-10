@@ -31,9 +31,10 @@ export function evaluateFieldCondition(
     case "contains":
       return actualStr.includes(expectedVal);
     case "is_checked":
-      return Boolean(triggerVal) === true || triggerVal === "Yes" || triggerVal === "yes";
+      // Only a ticked checkbox or an explicit "Yes" counts — "No" is a truthy string but not a yes.
+      return triggerVal === true || actualStr === "yes";
     case "is_not_checked":
-      return !triggerVal || triggerVal === "No" || triggerVal === "no" || triggerVal === false;
+      return !(triggerVal === true || actualStr === "yes");
     case "is_empty":
       return triggerVal === undefined || triggerVal === null || triggerVal === "";
     case "is_not_empty":

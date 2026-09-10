@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ChecklistItem, UserProfile, DocStatus } from "@/lib/types";
 import StatusBadge from "../shared/StatusBadge";
 import VersionHistoryModal from "./VersionHistoryModal";
@@ -39,6 +39,16 @@ export default function DocumentChecklistReview({
   const toast = useToast();
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<ChecklistItem | null>(null);
   const [rejectingItemId, setRejectingItemId] = useState<string | null>(null);
+
+  // Escape closes the rejection dialog from anywhere, not only when the backdrop has focus.
+  useEffect(() => {
+    if (!rejectingItemId) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setRejectingItemId(null);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [rejectingItemId]);
   const [rejectionReason, setRejectionReason] = useState("");
   const [reasonError, setReasonError] = useState(false);
 
@@ -302,9 +312,6 @@ export default function DocumentChecklistReview({
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in"
           onClick={() => setRejectingItemId(null)}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") setRejectingItemId(null);
-          }}
         >
           <div
             role="dialog"
@@ -333,6 +340,7 @@ export default function DocumentChecklistReview({
                 Rejection Reason / Guidance <span className="text-rose-500">*</span>
               </label>
               <textarea
+                  autoFocus
                 id="rejection-reason-input"
                 rows={3}
                 required

@@ -6,7 +6,7 @@ import { DataStore } from "@/lib/store/dataStore";
 import { useAuth } from "@/lib/context/AuthContext";
 import { hasFeature } from "@/lib/billing/plans";
 import { Firm, ClientCase, FormTemplate } from "@/lib/types";
-import DynamicFormRenderer from "@/components/forms/DynamicFormRenderer";
+import DynamicFormRenderer, { evaluateFieldCondition } from "@/components/forms/DynamicFormRenderer";
 import DocumentChecklistUpload from "@/components/documents/DocumentChecklistUpload";
 import StatusBadge from "@/components/shared/StatusBadge";
 import { useToast } from "@/components/shared/ToastProvider";
@@ -125,10 +125,10 @@ export default function ClientPortalPage() {
             Could not find an active case for portal link <code>/portal/{firmSlug}/{caseId}</code>.
           </p>
           <Link
-            href="/dashboard"
+            href={currentUser && currentUser.role !== "Client" ? "/dashboard" : "/auth/login?tab=client"}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:brightness-110 active:scale-[0.98] rounded-xl transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
           >
-            Go to Firm Dashboard
+            {currentUser && currentUser.role !== "Client" ? "Go to Firm Dashboard" : "Back to client sign-in"}
           </Link>
         </div>
       </div>
@@ -209,12 +209,25 @@ export default function ClientPortalPage() {
     toast.success("Progress saved! You can resume anytime.");
   };
 
+  // Staff previewing the portal act under their own identity in the audit trail.
+  const portalActor = currentUser && currentUser.role !== "Client"
+    ? { name: currentUser.name, id: currentUser.id }
+    : { name: clientCase.clientName, id: `client-${clientCase.id}` };
+
   const handleSubmitForm = () => {
-    // Validate required fields
+    if (clientCase.status === "Approved") {
+      toast.info("This case has already been approved. Contact your advisor if a response needs to change.");
+      return;
+    }
+
+    // Validate required fields — only those the client can actually see.
+    // Hidden conditional fields and upload-type fields never block submission.
+    let responsesToSubmit = formResponses;
     if (formTemplate) {
       const errors: Record<string, string> = {};
-      for (const field of formTemplate.fields) {
-        if (field.required) {
+      const visible = formTemplate.fields.filter((f) => evaluateFieldCondition(f.condition, formResponses));
+      for (const field of visible) {
+        if (field.required && field.type !== "file") {
           const val = formResponses[field.id];
           if (val === undefined || val === null || val === "" || val === false) {
             errors[field.id] = `${field.label} is required.`;
@@ -226,15 +239,20 @@ export default function ClientPortalPage() {
         toast.error("Please complete all required fields highlighted in red.");
         return;
       }
+      // Drop stale answers to fields that are no longer shown.
+      const visibleIds = new Set(visible.map((f) => f.id));
+      responsesToSubmit = Object.fromEntries(
+        Object.entries(formResponses).filter(([id]) => visibleIds.has(id))
+      );
     }
 
     setIsSubmittingForm(true);
     setTimeout(() => {
       const updated = DataStore.submitFormAnswers(
         clientCase.id,
-        formResponses,
-        clientCase.clientName,
-        `client-${clientCase.id}`
+        responsesToSubmit,
+        portalActor.name,
+        portalActor.id
       );
       setClientCase(updated);
       setIsSubmittingForm(false);
@@ -255,8 +273,8 @@ export default function ClientPortalPage() {
   ) => {
     const updated = DataStore.uploadDocument(clientCase.id, checklistItemId, {
       ...fileInfo,
-      uploadedBy: clientCase.clientName,
-      actorId: `client-${clientCase.id}`,
+      uploadedBy: portalActor.name,
+      actorId: portalActor.id,
     });
     setClientCase(updated);
 

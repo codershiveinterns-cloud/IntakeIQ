@@ -9,6 +9,7 @@ import { DataStore } from "@/lib/store/dataStore";
 import { FormTemplate } from "@/lib/types";
 import { useToast } from "@/components/shared/ToastProvider";
 import { useConfirm } from "@/components/shared/ConfirmProvider";
+import { hasPermission } from "@/lib/auth/permissions";
 import {
   FileSpreadsheet,
   PlusCircle,
@@ -206,8 +207,7 @@ export default function FormTemplatesPage() {
               {/* Action Buttons */}
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1">
-                  {!isReadOnly && (
-                    <>
+                  {hasPermission(role, "forms:create") && (
                       <button
                         type="button"
                         onClick={() => handleDuplicate(tmpl)}
@@ -217,6 +217,8 @@ export default function FormTemplatesPage() {
                       >
                         <Copy className="w-3.5 h-3.5" />
                       </button>
+                  )}
+                  {hasPermission(role, "forms:delete") && (
                       <button
                         type="button"
                         onClick={() => handleDelete(tmpl.id)}
@@ -226,7 +228,6 @@ export default function FormTemplatesPage() {
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
-                    </>
                   )}
                 </div>
 

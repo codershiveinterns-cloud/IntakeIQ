@@ -35,6 +35,9 @@ export default function ConfirmProvider({ children }: { children: React.ReactNod
             tone: options.tone ?? "default",
           };
 
+    // Only one dialog at a time: a newer request cancels the previous one
+    // instead of leaving its promise hanging forever.
+    resolverRef.current?.(false);
     setPending(normalized);
     return new Promise<boolean>((resolve) => {
       resolverRef.current = resolve;

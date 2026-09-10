@@ -27,7 +27,8 @@ import {
 
 interface DynamicFormBuilderProps {
   initialTemplate?: FormTemplate | null;
-  onSave: (templateData: { title: string; description: string; category: string; fields: FormField[] }) => void;
+  /** Return false to signal the save failed so the builder can re-enable its controls. */
+  onSave: (templateData: { title: string; description: string; category: string; fields: FormField[] }) => boolean | void;
   onCancel?: () => void;
   readOnly?: boolean;
 }
@@ -90,7 +91,13 @@ export default function DynamicFormBuilder({
       tone: "danger",
     });
     if (!ok) return;
-    setFields(fields.filter(f => f.id !== fieldId));
+    // Rules that pointed at the removed field would otherwise hide their
+    // dependents forever, so they are cleared along with it.
+    setFields(
+      fields
+        .filter(f => f.id !== fieldId)
+        .map(f => (f.condition?.triggerFieldId === fieldId ? { ...f, condition: undefined } : f))
+    );
   };
 
   const handleDuplicateField = (field: FormField) => {
@@ -133,12 +140,13 @@ export default function DynamicFormBuilder({
     }
     setFieldsError(false);
     setIsSaving(true);
-    onSave({
+    const result = onSave({
       title: title.trim(),
       description: description.trim(),
       category: category.trim(),
       fields,
     });
+    if (result === false) setIsSaving(false);
   };
 
   const handlePreviewSubmit = () => {

@@ -9,6 +9,8 @@ import { DataStore } from "@/lib/store/dataStore";
 import { FormTemplate, ChecklistItem, UserProfile } from "@/lib/types";
 import { useToast } from "@/components/shared/ToastProvider";
 import { useConfirm } from "@/components/shared/ConfirmProvider";
+import { hasPermission } from "@/lib/auth/permissions";
+import PermissionGate from "@/components/shared/PermissionGate";
 import {
   ArrowLeft,
   Plus,
@@ -23,7 +25,7 @@ import {
   Loader2
 } from "lucide-react";
 
-export default function NewCasePage() {
+function NewCasePageInner() {
   const router = useRouter();
   const { currentUser, role } = useAuth();
   const { currentFirm } = useTenant();
@@ -165,6 +167,7 @@ export default function NewCasePage() {
       <div className="flex items-center gap-3">
         <Link
           href="/dashboard"
+          aria-label="Back to cases"
           className="p-2 text-slate-500 hover:text-slate-900 bg-white hover:bg-slate-50 rounded-xl border border-slate-200 shadow-xs transition"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -248,6 +251,11 @@ export default function NewCasePage() {
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Intake Form Template
               </label>
+              {templates.length === 0 && (
+                <p className="mb-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  No form templates yet — <Link href="/dashboard/forms/builder" className="font-semibold underline">create one</Link> before inviting a client.
+                </p>
+              )}
               <select
                 value={selectedTemplateId}
                 onChange={(e) => setSelectedTemplateId(e.target.value)}
@@ -408,7 +416,7 @@ export default function NewCasePage() {
 
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || templates.length === 0}
             title={isSubmitting ? "Creating the case and sending the invitation..." : undefined}
             className="inline-flex items-center justify-center gap-2 px-6 py-2.5 text-xs font-bold text-white rounded-xl shadow-sm transition-all duration-150 ease-out hover:brightness-110 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
             style={{ backgroundColor: currentFirm?.primaryColor || "#0066FF" }}
@@ -428,5 +436,13 @@ export default function NewCasePage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function NewCasePage() {
+  return (
+    <PermissionGate permission="cases:create">
+      <NewCasePageInner />
+    </PermissionGate>
   );
 }

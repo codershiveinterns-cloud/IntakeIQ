@@ -6,6 +6,7 @@ import { useTenant } from "@/lib/context/TenantContext";
 import { UserRole } from "@/lib/types";
 import { DataStore } from "@/lib/store/dataStore";
 import { useConfirm } from "@/components/shared/ConfirmProvider";
+import { useToast } from "@/components/shared/ToastProvider";
 import NotificationBell from "@/components/shared/NotificationBell";
 import {
   Building2,
@@ -28,6 +29,7 @@ export default function DemoSwitcher() {
   const { currentUser, role, switchRole } = useAuth();
   const { currentFirm, allFirms, switchFirm } = useTenant();
   const confirm = useConfirm();
+  const toast = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [isFirmMenuOpen, setIsFirmMenuOpen] = useState(false);
   const firmMenuRef = useRef<HTMLDivElement>(null);
@@ -35,7 +37,9 @@ export default function DemoSwitcher() {
   // Prefer a case that actually belongs to the active firm so the portal
   // quick-link never points at a case owned by a different tenant.
   const firmCases = currentFirm ? DataStore.getCases(currentFirm.id) : [];
-  const portalCaseId = firmCases[0]?.id || "case-101";
+  const portalCaseId = firmCases[0]?.id ?? null;
+  // With no cases yet, the portal quick-link sends staff to create the first case instead.
+  const portalHref = portalCaseId ? `/portal/${currentFirm?.slug}/${portalCaseId}` : "/dashboard/cases/new";
 
   // Close the firm dropdown on outside click/tap and on Escape, so it isn't
   // stuck open on touch devices (which never fire mouseleave).
@@ -183,8 +187,12 @@ export default function DemoSwitcher() {
             return (
               <button
                 key={r.role}
-                onClick={() => switchRole(r.role)}
-                title={r.desc}
+                onClick={() => {
+                  if (!switchRole(r.role)) {
+                    toast.info("Create a client case first — the Client Portal view needs a case to open.");
+                  }
+                }}
+                title={r.role === "Client" && firmCases.length === 0 ? "Create a case first to preview the client portal" : r.desc}
                 aria-pressed={isActive}
                 className={`flex items-center gap-1.5 px-2.5 py-2 rounded text-xs transition-all duration-150 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 font-medium whitespace-nowrap ${
                   isActive
@@ -203,7 +211,7 @@ export default function DemoSwitcher() {
         <div className="flex items-center gap-2">
           {/* Quick link to client portal */}
           <Link
-            href={`/portal/${currentFirm?.slug || "apex-advisory"}/${portalCaseId}`}
+            href={portalHref}
             target="_blank"
             className="flex items-center gap-1 text-slate-300 hover:text-cyan-300 hover:bg-slate-800 px-2 py-2 rounded transition-all duration-150 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
             title="Open Branded Client Portal in new tab"

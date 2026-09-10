@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGate from "@/components/shared/PermissionGate";
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/lib/context/AuthContext";
 import { useTenant } from "@/lib/context/TenantContext";
@@ -33,7 +35,7 @@ function downloadTextFile(filename: string, content: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
-export default function AuditTrailPage() {
+function AuditTrailPageInner() {
   const { currentFirm } = useTenant();
   const { can } = useFirmPlan();
   const exportUnlocked = can("audit_export");
@@ -255,5 +257,13 @@ export default function AuditTrailPage() {
       </div>
     </div>
     </FeatureGate>
+  );
+}
+
+export default function AuditTrailPage() {
+  return (
+    <PermissionGate permission="audit:view">
+      <AuditTrailPageInner />
+    </PermissionGate>
   );
 }

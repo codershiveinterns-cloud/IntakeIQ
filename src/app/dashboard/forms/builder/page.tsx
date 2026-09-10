@@ -23,15 +23,15 @@ function FormBuilderContent() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    if (!currentFirm) return;
     DataStore.initSeedData();
     if (templateId) {
       const found = DataStore.getFormTemplateById(templateId);
-      if (found) {
-        setTemplate(found);
-      }
+      // Templates are tenant-scoped: another firm's template must not be openable (or re-homed on save).
+      setTemplate(found && found.firmId === currentFirm.id ? found : null);
     }
     setLoaded(true);
-  }, [templateId]);
+  }, [templateId, currentFirm?.id]);
 
   if (!loaded) {
     return <div className="p-8 text-center text-xs text-slate-500">Loading Form Builder...</div>;
@@ -45,10 +45,10 @@ function FormBuilderContent() {
     category: string;
     fields: FormField[];
   }) => {
-    if (readOnly) return;
+    if (readOnly) return false;
     if (!currentFirm) {
       toast.error("No active firm selected. Please refresh and try again.");
-      return;
+      return false;
     }
 
     try {
@@ -75,8 +75,10 @@ function FormBuilderContent() {
 
       toast.success(template ? "Form template updated." : "Form template created.");
       router.push("/dashboard/forms");
+      return true;
     } catch (err) {
       toast.error("Something went wrong saving this template. Please try again.");
+      return false;
     }
   };
 

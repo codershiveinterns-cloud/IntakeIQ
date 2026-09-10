@@ -28,7 +28,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isInitialized: boolean;
   /** Email + password sign-in. Unverified accounts and wrong passwords are rejected. */
-  login: (email: string, password: string, workspaceSlug?: string) => LoginResult;
+  login: (email: string, password: string, workspaceSlug?: string, remember?: boolean) => LoginResult;
   /** 1-click demo profile sign-in — no password, but still requires a verified account. */
   quickLogin: (email: string) => LoginResult;
   /** Client portal sign-in: case reference + the email the case was issued to. */
@@ -37,7 +37,8 @@ interface AuthContextType {
   signupAdmin: (data: SignupInput) => { user: UserProfile; verificationUrl: string };
   /** Re-issues the verification email for an unverified account. Returns the demo link, if any. */
   resendVerification: (email: string) => string | null;
-  switchRole: (role: UserRole) => void;
+  /** Returns false when the role cannot be assumed for this firm (e.g. Client with no cases). */
+  switchRole: (role: UserRole) => boolean;
   switchUser: (userId: string) => void;
   logout: () => void;
   firmUsers: UserProfile[];
@@ -46,10 +47,12 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-function persistSession(userId: string) {
+function persistSession(userId: string, remember = true) {
   if (typeof window === "undefined") return;
   sessionStorage.setItem("intakeiq_current_user_id", userId);
-  localStorage.setItem("intakeiq_current_user_id", userId);
+  // "Remember this browser" keeps the session across tabs/restarts; otherwise it's tab-scoped.
+  if (remember) localStorage.setItem("intakeiq_current_user_id", userId);
+  else localStorage.removeItem("intakeiq_current_user_id");
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -72,6 +75,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // A restored session is only honoured for verified accounts.
       if (found && DataStore.isEmailVerified(found)) {
         setCurrentUser(found);
+        // A restored session must always land in its own firm, never the default tenant.
+        if (currentFirm && found.firmId !== currentFirm.id) switchFirm(found.firmId);
         setIsInitialized(true);
         return;
       }
@@ -85,16 +90,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshUsers();
   }, [currentFirm?.id]);
 
-  const establishSession = (user: UserProfile, method: "password" | "demo_profile" | "client_portal") => {
+  const establishSession = (
+    user: UserProfile,
+    method: "password" | "demo_profile" | "client_portal",
+    remember = true
+  ) => {
     DataStore.recordSignIn(user, method);
     const fresh = DataStore.getUserById(user.id) || user;
     setCurrentUser(fresh);
     switchFirm(fresh.firmId);
-    persistSession(fresh.id);
+    persistSession(fresh.id, remember);
     return fresh;
   };
 
-  const login = (email: string, password: string, workspaceSlug?: string): LoginResult => {
+  const login = (email: string, password: string, workspaceSlug?: string, remember = true): LoginResult => {
     DataStore.initSeedData();
     const user = DataStore.getUserByEmail(email);
     if (!user || user.role === "Client") return { ok: false, reason: "not_found" };
@@ -109,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!DataStore.isEmailVerified(user)) return { ok: false, reason: "unverified" };
     if (!DataStore.verifyPassword(user, password)) return { ok: false, reason: "bad_password" };
 
-    return { ok: true, user: establishSession(user, "password") };
+    return { ok: true, user: establishSession(user, "password", remember) };
   };
 
   const quickLogin = (email: string): LoginResult => {
@@ -122,14 +131,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const clientLogin = ({ firmSlug, token, email }: { firmSlug: string; token: string; email: string }): ClientLoginResult => {
     DataStore.initSeedData();
-    const firm = DataStore.getFirmBySlug(firmSlug.trim().toLowerCase());
     const matchedCase = DataStore.getCaseByToken(token.trim());
+    // The case reference identifies the firm; an explicit workspace (from a
+    // portal link) must agree with it, but clients never have to know it.
+    const firm = matchedCase ? DataStore.getFirmById(matchedCase.firmId) : undefined;
+    const requestedSlug = firmSlug.trim().toLowerCase();
     const normalizedEmail = email.trim().toLowerCase();
 
     if (
       !firm ||
       !matchedCase ||
-      matchedCase.firmId !== firm.id ||
+      (requestedSlug && firm.slug !== requestedSlug) ||
       !normalizedEmail ||
       matchedCase.clientEmail.toLowerCase() !== normalizedEmail
     ) {
@@ -138,7 +150,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Clients authenticate with the case reference + invited email, so the
     // matching account is created on first sign-in (already proven via invite).
+    // A staff account can never be reached through the client door.
     let user = DataStore.getUserByEmail(matchedCase.clientEmail);
+    if (user && user.role !== "Client") {
+      return { ok: false, reason: "no_match" };
+    }
     if (!user) {
       user = DataStore.createUser({
         email: matchedCase.clientEmail,
@@ -228,9 +244,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return url;
   };
 
-  const switchRole = (role: UserRole) => {
-    if (!currentFirm) return;
+  const switchRole = (role: UserRole): boolean => {
+    if (!currentFirm) return false;
     const users = DataStore.getUsers(currentFirm.id);
+
+    if (role === "Client") {
+      // A client identity only makes sense for a case that exists in this firm.
+      const firstCase = DataStore.getCases(currentFirm.id)[0];
+      if (!firstCase) return false;
+      let client = DataStore.getUserByEmail(firstCase.clientEmail);
+      if (client && client.role !== "Client") return false;
+      if (!client) {
+        client = DataStore.createUser({
+          email: firstCase.clientEmail,
+          name: firstCase.clientName,
+          role: "Client",
+          firmId: currentFirm.id,
+          title: firstCase.clientCompany ? `Client — ${firstCase.clientCompany}` : "Client Portal User",
+          emailVerified: true,
+        });
+        refreshUsers();
+      }
+      setCurrentUser(client);
+      persistSession(client.id);
+      return true;
+    }
+
     const matchedUser = users.find(u => u.role === role && DataStore.isEmailVerified(u));
     if (matchedUser) {
       setCurrentUser(matchedUser);
@@ -249,6 +288,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshUsers();
       persistSession(tempUser.id);
     }
+    return true;
   };
 
   const switchUser = (userId: string) => {

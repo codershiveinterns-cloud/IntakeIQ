@@ -58,6 +58,7 @@ export default function CaseDetailPage() {
   const { can } = useFirmPlan();
 
   const [clientCase, setClientCase] = useState<ClientCase | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [template, setTemplate] = useState<FormTemplate | null>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [activeTab, setActiveTab] = useState<"checklist" | "form" | "audit" | "notes">("checklist");
@@ -85,11 +86,16 @@ export default function CaseDetailPage() {
       setTemplate(null);
       setAuditLogs([]);
     }
+    setLoaded(true);
   };
 
   useEffect(() => {
     refreshCase();
   }, [caseId, currentFirm?.id]);
+
+  if (!loaded) {
+    return <div className="p-8 text-center text-xs text-slate-500">Loading case…</div>;
+  }
 
   if (!clientCase) {
     return (
@@ -186,7 +192,7 @@ export default function CaseDetailPage() {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                Case #{clientCase.id}
+                Ref {clientCase.id.toUpperCase()}
               </span>
               <StatusBadge status={clientCase.status} size="sm" />
             </div>

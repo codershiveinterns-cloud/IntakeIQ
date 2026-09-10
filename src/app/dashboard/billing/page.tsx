@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGate from "@/components/shared/PermissionGate";
+
 import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -447,10 +449,18 @@ function BillingPageContent() {
   );
 }
 
-export default function BillingPage() {
+function BillingPageInner() {
   return (
     <Suspense fallback={<div className="text-xs text-slate-500">Loading billing…</div>}>
       <BillingPageContent />
     </Suspense>
+  );
+}
+
+export default function BillingPage() {
+  return (
+    <PermissionGate permission="settings:view">
+      <BillingPageInner />
+    </PermissionGate>
   );
 }

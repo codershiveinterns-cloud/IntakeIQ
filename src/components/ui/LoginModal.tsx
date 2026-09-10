@@ -89,7 +89,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           {tab === "firm" ? (
             <div className="space-y-3.5">
               <Link
-                href="/dashboard"
+                href="/auth/login"
                 onClick={onClose}
                 className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-bold rounded-xl shadow-sm transition-colors duration-150 flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
               >
@@ -114,7 +114,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               </p>
 
               <Link
-                href="/portal/apex-advisory/case-101"
+                href="/auth/login?tab=client&slug=apex-advisory&token=case-101"
                 onClick={onClose}
                 className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 active:bg-slate-700 text-white font-bold rounded-xl shadow-sm transition-colors duration-150 flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
               >

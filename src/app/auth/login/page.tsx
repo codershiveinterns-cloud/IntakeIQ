@@ -86,7 +86,7 @@ function LoginPageContent() {
     setIsSubmitting(true);
 
     setTimeout(() => {
-      const result = login(email, password, tenantSlug);
+      const result = login(email, password, tenantSlug, rememberMe);
       if (result.ok) {
         router.push("/dashboard");
       } else {
@@ -113,7 +113,7 @@ function LoginPageContent() {
     setIsSubmitting(true);
 
     setTimeout(() => {
-      const result = clientLogin({ firmSlug: tenantSlug, token: clientToken, email: clientEmail });
+      const result = clientLogin({ firmSlug: prefillSlug, token: clientToken, email: clientEmail });
       if (result.ok) {
         router.push(`/portal/${result.firmSlug}/${result.caseId}`);
       } else {
