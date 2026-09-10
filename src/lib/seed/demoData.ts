@@ -45,6 +45,7 @@ export const INITIAL_USERS: UserProfile[] = [
     firmId: "firm-apex",
     avatarUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=128&auto=format&fit=crop&q=80",
     title: "Senior Partner & Practice Lead",
+    emailVerified: true,
     createdAt: "2026-01-15T09:00:00Z",
   },
   {
@@ -55,6 +56,7 @@ export const INITIAL_USERS: UserProfile[] = [
     firmId: "firm-apex",
     avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=128&auto=format&fit=crop&q=80",
     title: "Onboarding Case Manager",
+    emailVerified: true,
     createdAt: "2026-01-16T10:00:00Z",
   },
   {
@@ -65,6 +67,7 @@ export const INITIAL_USERS: UserProfile[] = [
     firmId: "firm-apex",
     avatarUrl: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=128&auto=format&fit=crop&q=80",
     title: "Compliance & Intake Associate",
+    emailVerified: true,
     createdAt: "2026-01-18T14:30:00Z",
   },
   {
@@ -75,6 +78,7 @@ export const INITIAL_USERS: UserProfile[] = [
     firmId: "firm-apex",
     avatarUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=128&auto=format&fit=crop&q=80",
     title: "CEO, Lumina Health Inc.",
+    emailVerified: true,
     createdAt: "2026-02-10T11:00:00Z",
   },
   // Vanguard Users
@@ -86,6 +90,7 @@ export const INITIAL_USERS: UserProfile[] = [
     firmId: "firm-vanguard",
     avatarUrl: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=128&auto=format&fit=crop&q=80",
     title: "Managing CPA Partner",
+    emailVerified: true,
     createdAt: "2026-02-01T10:30:00Z",
   }
 ];

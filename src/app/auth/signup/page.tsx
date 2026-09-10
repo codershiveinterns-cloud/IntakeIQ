@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/context/AuthContext";
 import { useToast } from "@/components/shared/ToastProvider";
 import { DataStore } from "@/lib/store/dataStore";
+import { validatePassword, PASSWORD_MIN_LENGTH } from "@/lib/auth/password";
+import { DemoLinkNotice } from "@/components/auth/AuthCard";
 import {
   Building2,
   Lock,
@@ -14,7 +16,8 @@ import {
   Palette,
   Globe,
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
+  MailCheck
 } from "lucide-react";
 
 const HEX_COLOR_PATTERN = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
@@ -42,6 +45,7 @@ export default function SignupPage() {
   const [slugError, setSlugError] = useState("");
   const [colorError, setColorError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [created, setCreated] = useState<{ email: string; firmName: string; slug: string; verificationUrl: string } | null>(null);
 
   const handleFirmNameChange = (val: string) => {
     setFirmName(val);
@@ -56,6 +60,17 @@ export default function SignupPage() {
 
     if (!firmName.trim() || !adminName.trim() || !email.trim()) {
       toast.error("Please fill in all required fields.");
+      return;
+    }
+
+    const passwordProblem = validatePassword(password);
+    if (passwordProblem) {
+      toast.error(passwordProblem);
+      return;
+    }
+
+    if (DataStore.getUserByEmail(email)) {
+      toast.error("An account with that email already exists. Sign in instead, or use a different address.");
       return;
     }
 
@@ -79,18 +94,56 @@ export default function SignupPage() {
     }
 
     setIsSubmitting(true);
-    signupAdmin({
+    const { verificationUrl } = signupAdmin({
       firmName: firmName.trim(),
       slug: normalizedSlug,
       adminName: adminName.trim(),
       email: email.trim(),
+      password,
       primaryColor,
       industry,
     });
 
-    toast.success(`Workspace "${firmName.trim()}" created. Welcome aboard!`);
-    router.push("/dashboard");
+    toast.success(`Workspace "${firmName.trim()}" created. Verify your email to activate it.`);
+    setCreated({ email: email.trim(), firmName: firmName.trim(), slug: normalizedSlug, verificationUrl });
+    setIsSubmitting(false);
   };
+
+  if (created) {
+    return (
+      <div className="min-h-screen bg-slate-900 text-white flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-lg bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl p-8 space-y-6 animate-fade-in">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+            <MailCheck className="w-6 h-6" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-extrabold tracking-tight">Verify your email to activate {created.firmName}</h1>
+            <p className="text-sm text-slate-300 leading-relaxed">
+              We&apos;ve sent a verification link to <strong className="text-white">{created.email}</strong>. Your workspace is created, but you won&apos;t be able to sign in until the address is confirmed.
+            </p>
+          </div>
+
+          <ol className="text-xs text-slate-300 space-y-2 list-decimal list-inside">
+            <li>Open the verification link from your inbox.</li>
+            <li>Sign in with your email and the password you just chose.</li>
+            <li>Invite your team and create your first client case.</li>
+          </ol>
+
+          <DemoLinkNotice url={created.verificationUrl} label="Open verification link" />
+
+          <div className="text-center text-xs text-slate-400">
+            Already verified?{" "}
+            <Link
+              href={`/auth/login?email=${encodeURIComponent(created.email)}&slug=${encodeURIComponent(created.slug)}`}
+              className="text-brand-400 hover:text-brand-300 font-semibold rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-800"
+            >
+              Sign in →
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-900 text-white flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -282,12 +335,17 @@ export default function SignupPage() {
                   <input
                     type="password"
                     required
+                    minLength={PASSWORD_MIN_LENGTH}
+                    autoComplete="new-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     className="w-full pl-9 pr-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
                   />
                 </div>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  At least {PASSWORD_MIN_LENGTH} characters, including a letter and a number.
+                </p>
               </div>
             </div>
 
@@ -297,7 +355,7 @@ export default function SignupPage() {
               title={isSubmitting ? "Setting up your workspace…" : undefined}
               className="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-500 active:bg-brand-700 active:scale-[0.98] text-white font-bold rounded-xl shadow-md transition-all duration-150 ease-out flex items-center justify-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-800"
             >
-              <span>{isSubmitting ? "Creating Workspace..." : "Create Tenant Workspace & Open Dashboard"}</span>
+              <span>{isSubmitting ? "Creating Workspace..." : "Create Tenant Workspace"}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>

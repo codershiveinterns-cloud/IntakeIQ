@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/context/AuthContext";
-import { useTenant } from "@/lib/context/TenantContext";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth, LoginFailure } from "@/lib/context/AuthContext";
 import { useToast } from "@/components/shared/ToastProvider";
-import { DataStore } from "@/lib/store/dataStore";
+import { DEMO_PASSWORD } from "@/lib/auth/password";
 import LogoMark from "@/components/shared/LogoMark";
+import { DemoLinkNotice } from "@/components/auth/AuthCard";
 import {
   Building2,
   Lock,
@@ -23,7 +23,9 @@ import {
   ArrowLeft,
   CheckCircle2,
   Star,
-  Quote
+  Quote,
+  MailCheck,
+  RefreshCw
 } from "lucide-react";
 
 const TRUST_POINTS = [
@@ -33,39 +35,76 @@ const TRUST_POINTS = [
   "Role-based access for admins, staff & clients",
 ];
 
-export default function LoginPage() {
+const FAILURE_MESSAGES: Record<LoginFailure, string> = {
+  not_found: "We couldn't find a firm account with that email. Check the address, or use a 1-Click Demo Profile below.",
+  bad_password: "Incorrect password. Try again, or use “Forgot password?” to reset it.",
+  unverified: "This email address hasn't been verified yet. Open the verification link we emailed you, then sign in.",
+  wrong_workspace: "That account doesn't belong to this firm workspace. Check the workspace subdomain and try again.",
+};
+
+function LoginPageContent() {
   const router = useRouter();
-  const { login } = useAuth();
-  const { switchFirm } = useTenant();
+  const params = useSearchParams();
+  const { login, quickLogin, clientLogin, resendVerification } = useAuth();
   const toast = useToast();
 
-  const [activeTab, setActiveTab] = useState<"firm" | "client">("firm");
-  const [email, setEmail] = useState("admin@apexadvisory.com");
-  const [password, setPassword] = useState("demo-password-2026");
-  const [tenantSlug, setTenantSlug] = useState("apex-advisory");
+  const initialTab = params.get("tab") === "client" ? "client" : "firm";
+  const prefillEmail = params.get("email") || "";
+  const prefillSlug = params.get("slug") || "";
+  const prefillToken = params.get("token") || "";
+
+  const [activeTab, setActiveTab] = useState<"firm" | "client">(initialTab);
+  const [email, setEmail] = useState(prefillEmail || "admin@apexadvisory.com");
+  const [password, setPassword] = useState(prefillEmail ? "" : DEMO_PASSWORD);
+  const [tenantSlug, setTenantSlug] = useState(prefillSlug || "apex-advisory");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const [clientToken, setClientToken] = useState("case-101");
-  const [clientEmail, setClientEmail] = useState("david@luminahealth.io");
+  const [clientToken, setClientToken] = useState(prefillToken || "case-101");
+  const [clientEmail, setClientEmail] = useState(prefillToken ? "" : "david@luminahealth.io");
   const [error, setError] = useState("");
+  const [failure, setFailure] = useState<LoginFailure | null>(null);
+  const [demoVerifyUrl, setDemoVerifyUrl] = useState<string | null>(null);
   const [clientError, setClientError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isQuickLoggingIn, setIsQuickLoggingIn] = useState(false);
 
+  const notice = params.get("verified") === "1"
+    ? "Email verified — you can now sign in."
+    : params.get("reset") === "1"
+      ? "Password updated — sign in with your new password."
+      : params.get("activated") === "1"
+        ? "Account activated — sign in with the password you just created."
+        : prefillToken
+        ? "Sign in with the email address your invitation was sent to."
+        : "";
+
   const handleFirmLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setFailure(null);
+    setDemoVerifyUrl(null);
     setIsSubmitting(true);
 
     setTimeout(() => {
-      const success = login(email);
-      if (success) {
+      const result = login(email, password, tenantSlug);
+      if (result.ok) {
         router.push("/dashboard");
       } else {
-        setError("User account not recognized. You can use any of the 1-Click Demo Profiles below!");
+        setFailure(result.reason);
+        setError(FAILURE_MESSAGES[result.reason]);
         setIsSubmitting(false);
       }
     }, 400);
+  };
+
+  const handleResendVerification = () => {
+    const url = resendVerification(email);
+    if (url) {
+      setDemoVerifyUrl(url);
+      toast.success(`Verification email re-sent to ${email.trim()}.`);
+    } else {
+      toast.info("This account is already verified — try signing in again.");
+    }
   };
 
   const handleClientLogin = (e: React.FormEvent) => {
@@ -74,17 +113,9 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     setTimeout(() => {
-      const slug = tenantSlug.trim() || "apex-advisory";
-      const token = clientToken.trim() || "case-101";
-      const firm = DataStore.getFirmBySlug(slug);
-      const matchedCase = DataStore.getCaseById(token);
-      const emailMatches =
-        !!matchedCase &&
-        !!clientEmail.trim() &&
-        matchedCase.clientEmail.toLowerCase() === clientEmail.trim().toLowerCase();
-
-      if (firm && matchedCase && matchedCase.firmId === firm.id && emailMatches) {
-        router.push(`/portal/${slug}/${token}`);
+      const result = clientLogin({ firmSlug: tenantSlug, token: clientToken, email: clientEmail });
+      if (result.ok) {
+        router.push(`/portal/${result.firmSlug}/${result.caseId}`);
       } else {
         setClientError("We couldn't match that case reference and email. Check the token and email from your firm advisor's invitation.");
         setIsSubmitting(false);
@@ -92,23 +123,30 @@ export default function LoginPage() {
     }, 400);
   };
 
-  const handleQuickLogin = (role: any, quickEmail: string, firmId?: string) => {
+  const handleQuickLogin = (quickEmail: string) => {
     if (isQuickLoggingIn) return;
     setIsQuickLoggingIn(true);
-    if (firmId) {
-      switchFirm(firmId);
+    const result = quickLogin(quickEmail);
+    if (result.ok) {
+      router.push("/dashboard");
+    } else {
+      setActiveTab("firm");
+      setError(FAILURE_MESSAGES[result.reason]);
+      setIsQuickLoggingIn(false);
     }
-    login(quickEmail);
-    router.push("/dashboard");
   };
 
   const handleClientQuickLogin = () => {
     if (isQuickLoggingIn) return;
     setIsQuickLoggingIn(true);
-    login("david@luminahealth.io");
-    const demoCase = DataStore.getCaseById("case-101");
-    const demoFirm = demoCase ? DataStore.getFirmById(demoCase.firmId) : undefined;
-    router.push(`/portal/${demoFirm?.slug || "apex-advisory"}/${demoCase?.id || "case-101"}`);
+    const result = clientLogin({ firmSlug: "apex-advisory", token: "case-101", email: "david@luminahealth.io" });
+    if (result.ok) {
+      router.push(`/portal/${result.firmSlug}/${result.caseId}`);
+    } else {
+      setActiveTab("client");
+      setClientError("The demo client case is unavailable. Use “Reset demo data” from the dashboard and try again.");
+      setIsQuickLoggingIn(false);
+    }
   };
 
   return (
@@ -237,10 +275,30 @@ export default function LoginPage() {
               </button>
             </div>
 
-            {activeTab === "firm" && error && (
-              <div role="alert" className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-                <span>{error}</span>
+            {notice && (
+              <div role="status" className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+                <MailCheck className="w-4 h-4 shrink-0" />
+                <span>{notice}</span>
               </div>
+            )}
+
+            {activeTab === "firm" && error && (
+              <div role="alert" className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-2.5">
+                <span className="block">{error}</span>
+                {failure === "unverified" && (
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    className="inline-flex items-center gap-1.5 font-bold text-rose-800 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    Resend verification email
+                  </button>
+                )}
+              </div>
+            )}
+            {activeTab === "firm" && demoVerifyUrl && (
+              <DemoLinkNotice url={demoVerifyUrl} label="Open verification link" />
             )}
             {activeTab === "client" && clientError && (
               <div role="alert" className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
@@ -292,19 +350,12 @@ export default function LoginPage() {
                     <label className="text-xs font-semibold text-slate-700">
                       Password <span className="text-brand-600">*</span>
                     </label>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        toast.info(
-                          email.trim()
-                            ? `If ${email.trim()} matches an authorized admin, a password reset link has been sent.`
-                            : "Enter your work email above first, then request a reset link."
-                        )
-                      }
+                    <Link
+                      href={email.trim() ? `/auth/forgot-password?email=${encodeURIComponent(email.trim())}` : "/auth/forgot-password"}
                       className="text-[11px] font-semibold text-brand-600 hover:text-brand-700 hover:underline py-1 px-1 -m-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 rounded"
                     >
                       Forgot password?
-                    </button>
+                    </Link>
                   </div>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -326,6 +377,9 @@ export default function LoginPage() {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  <p className="mt-1.5 text-[11px] text-slate-400">
+                    Demo profiles use the shared password <code className="font-mono text-slate-500">{DEMO_PASSWORD}</code>.
+                  </p>
                 </div>
 
                 <div className="flex items-center justify-between pt-1">
@@ -417,7 +471,7 @@ export default function LoginPage() {
                 {/* Admin Profile */}
                 <button
                   type="button"
-                  onClick={() => handleQuickLogin("Admin", "admin@apexadvisory.com", "firm-apex")}
+                  onClick={() => handleQuickLogin("admin@apexadvisory.com")}
                   disabled={isQuickLoggingIn || isSubmitting}
                   className="p-3 bg-slate-50 hover:bg-purple-50/70 hover:border-purple-300 rounded-xl border border-slate-200 text-left transition-all duration-150 ease-out group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm hover:shadow"
                 >
@@ -431,7 +485,7 @@ export default function LoginPage() {
                 {/* Case Manager Profile */}
                 <button
                   type="button"
-                  onClick={() => handleQuickLogin("CaseManager", "casemanager@apexadvisory.com", "firm-apex")}
+                  onClick={() => handleQuickLogin("casemanager@apexadvisory.com")}
                   disabled={isQuickLoggingIn || isSubmitting}
                   className="p-3 bg-slate-50 hover:bg-blue-50/70 hover:border-blue-300 rounded-xl border border-slate-200 text-left transition-all duration-150 ease-out group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm hover:shadow"
                 >
@@ -445,7 +499,7 @@ export default function LoginPage() {
                 {/* Staff Profile */}
                 <button
                   type="button"
-                  onClick={() => handleQuickLogin("Staff", "staff@apexadvisory.com", "firm-apex")}
+                  onClick={() => handleQuickLogin("staff@apexadvisory.com")}
                   disabled={isQuickLoggingIn || isSubmitting}
                   className="p-3 bg-slate-50 hover:bg-emerald-50/70 hover:border-emerald-300 rounded-xl border border-slate-200 text-left transition-all duration-150 ease-out group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm hover:shadow"
                 >
@@ -492,5 +546,13 @@ export default function LoginPage() {
         </footer>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageContent />
+    </Suspense>
   );
 }

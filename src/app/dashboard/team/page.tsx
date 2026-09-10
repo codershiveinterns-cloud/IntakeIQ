@@ -79,6 +79,7 @@ export default function TeamPage() {
       role: inviteRole,
       firmId: currentFirm.id,
       title: inviteTitle.trim() || `${inviteRole} Associate`,
+      emailVerified: false, // activated via the emailed link
     });
 
     DataStore.addAuditLog({
@@ -91,20 +92,13 @@ export default function TeamPage() {
       details: `Invited with role ${newUser.role} to ${currentFirm.name}.`
     });
 
-    DataStore.sendEmail({
-      firmId: currentFirm.id,
-      to: newUser.email,
-      recipientName: newUser.name,
-      subject: `You've been invited to join ${currentFirm.name} on IntakeIQ`,
-      bodyText: `Hello ${newUser.name}, you have been added as a ${newUser.role} on IntakeIQ for ${currentFirm.name}. Log in to review assigned cases.`,
-      type: "invitation",
-      metadata: { role: newUser.role }
-    });
+    // Activation email (verify address + create password) — visible in the Outbox.
+    DataStore.issueEmailVerification(newUser, { mode: "invite", invitedBy: currentUser.name });
 
     resetInviteForm();
     setIsInviteModalOpen(false);
     refreshTeam();
-    toast.success(`Invite sent to ${newUser.name}.`);
+    toast.success(`Invite sent to ${newUser.name}. They can sign in once they activate via the emailed link.`);
   };
 
   const resetInviteForm = () => {

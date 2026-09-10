@@ -23,7 +23,7 @@ import {
 
 export default function FormTemplatesPage() {
   const router = useRouter();
-  const { role } = useAuth();
+  const { role, currentUser } = useAuth();
   const { currentFirm } = useTenant();
   const toast = useToast();
   const confirm = useConfirm();
@@ -44,13 +44,24 @@ export default function FormTemplatesPage() {
   }, [currentFirm?.id]);
 
   const handleDuplicate = (tmpl: FormTemplate) => {
-    DataStore.saveFormTemplate({
+    const copy = DataStore.saveFormTemplate({
       firmId: tmpl.firmId,
       title: `${tmpl.title} (Copy)`,
       description: tmpl.description,
       category: tmpl.category,
       fields: tmpl.fields,
     });
+    if (currentUser && currentFirm) {
+      DataStore.addAuditLog({
+        firmId: currentFirm.id,
+        actorId: currentUser.id,
+        actorName: currentUser.name,
+        actorRole: currentUser.role,
+        action: "Form Template Duplicated",
+        targetEntity: copy.title,
+        details: `Duplicated from "${tmpl.title}" (${tmpl.fields.length} fields).`,
+      });
+    }
     refreshTemplates();
     toast.success("Form template duplicated.");
   };
@@ -63,7 +74,19 @@ export default function FormTemplatesPage() {
       tone: "danger",
     });
     if (!ok) return;
+    const target = templates.find((t) => t.id === id);
     DataStore.deleteFormTemplate(id);
+    if (currentUser && currentFirm) {
+      DataStore.addAuditLog({
+        firmId: currentFirm.id,
+        actorId: currentUser.id,
+        actorName: currentUser.name,
+        actorRole: currentUser.role,
+        action: "Form Template Deleted",
+        targetEntity: target?.title || id,
+        details: target ? `Removed template with ${target.fields.length} fields.` : "Template removed.",
+      });
+    }
     refreshTemplates();
     toast.success("Form template deleted.");
   };

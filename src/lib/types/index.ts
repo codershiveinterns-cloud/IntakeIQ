@@ -31,6 +31,15 @@ export interface UserProfile {
   avatarUrl?: string;
   title?: string;
   createdAt: string;
+  // --- Account security (simulated; see lib/auth/password.ts) ---
+  // undefined is treated as verified so pre-existing demo data keeps working;
+  // freshly registered or invited accounts are created with `false`.
+  emailVerified?: boolean;
+  passwordHash?: string;          // undefined => the shared demo password applies
+  verificationToken?: string;     // single-use email verification / activation link
+  passwordResetToken?: string;    // single-use, time-limited reset link
+  passwordResetExpiresAt?: string;
+  lastLoginAt?: string;
 }
 
 export type CaseStatus = 
@@ -172,9 +181,21 @@ export interface EmailNotification {
   recipientName: string;
   subject: string;
   bodyText: string;
-  type: 'invitation' | 'doc_rejected' | 'status_change' | 'form_submitted' | 'doc_uploaded';
+  type:
+    | 'invitation'
+    | 'doc_rejected'
+    | 'status_change'
+    | 'form_submitted'
+    | 'doc_uploaded'
+    | 'verification'
+    | 'password_reset'
+    | 'portal_access';
   sentAt: string;
   status: 'delivered' | 'simulated' | 'failed';
+  // Optional call-to-action rendered as a button in the Outbox (verification,
+  // password reset and portal links) so every emailed link is actually clickable.
+  actionUrl?: string;
+  actionLabel?: string;
   metadata?: Record<string, any>;
 }
 

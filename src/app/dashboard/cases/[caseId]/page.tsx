@@ -12,6 +12,7 @@ import DynamicFormRenderer from "@/components/forms/DynamicFormRenderer";
 import DocumentChecklistReview from "@/components/documents/DocumentChecklistReview";
 import { useToast } from "@/components/shared/ToastProvider";
 import { useFirmPlan } from "@/components/shared/FeatureGate";
+import { hasPermission } from "@/lib/auth/permissions";
 import {
   ArrowLeft,
   Building2,
@@ -65,18 +66,24 @@ export default function CaseDetailPage() {
   const [isSavingNotes, setIsSavingNotes] = useState(false);
 
   const refreshCase = () => {
-    if (!caseId) return;
+    if (!caseId || !currentFirm) return;
     DataStore.initSeedData();
     const c = DataStore.getCaseById(caseId);
-    if (c) {
+    // Tenant isolation: a case that exists but belongs to another firm must be
+    // indistinguishable from a case that does not exist at all.
+    if (c && c.firmId === currentFirm.id) {
       setClientCase(c);
       setInternalNotes(c.notes || "");
       if (c.formTemplateId) {
         const tmpl = DataStore.getFormTemplateById(c.formTemplateId);
         setTemplate(tmpl || null);
       }
-      const logs = DataStore.getAuditLogs(c.firmId, c.id);
+      const logs = DataStore.getAuditLogs(currentFirm.id, c.id);
       setAuditLogs(logs);
+    } else {
+      setClientCase(null);
+      setTemplate(null);
+      setAuditLogs([]);
     }
   };
 
@@ -90,7 +97,7 @@ export default function CaseDetailPage() {
         <AlertCircle className="w-10 h-10 text-slate-400 mx-auto mb-2" />
         <h3 className="text-sm font-bold text-slate-800">Case Not Found</h3>
         <p className="text-xs text-slate-500 mt-1 mb-4">
-          The requested case ID could not be loaded.
+          No case with this reference exists in your firm&apos;s workspace.
         </p>
         <Link
           href="/dashboard"
@@ -161,7 +168,8 @@ export default function CaseDetailPage() {
       });
   };
 
-  const isStaffReadOnly = role === "Staff";
+  // Review actions (approve / reject / stage change) follow the RBAC matrix, not a role name.
+  const isStaffReadOnly = !hasPermission(role, "cases:approve_docs");
 
   return (
     <div className="space-y-6">

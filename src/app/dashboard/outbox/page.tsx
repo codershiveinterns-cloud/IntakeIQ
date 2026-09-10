@@ -65,9 +65,33 @@ export default function EmailOutboxPage() {
         return "bg-blue-50 text-blue-700 border-blue-200";
       case "doc_uploaded":
         return "bg-sky-50 text-sky-700 border-sky-200";
+      case "verification":
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      case "password_reset":
+        return "bg-orange-50 text-orange-700 border-orange-200";
+      case "portal_access":
+        return "bg-indigo-50 text-indigo-700 border-indigo-200";
       default:
         return "bg-slate-100 text-slate-700 border-slate-200";
     }
+  };
+
+  // Every URL we "email" must be a real, clickable link in the simulator.
+  const renderBody = (text: string) => {
+    const parts = text.split(/(https?:\/\/[^\s]+)/g);
+    return parts.map((part, i) =>
+      /^https?:\/\//.test(part) ? (
+        <a
+          key={i}
+          href={part}
+          className="text-brand-600 hover:text-brand-700 underline break-all"
+        >
+          {part}
+        </a>
+      ) : (
+        <React.Fragment key={i}>{part}</React.Fragment>
+      )
+    );
   };
 
   return (
@@ -84,7 +108,7 @@ export default function EmailOutboxPage() {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Real-time inspection of outgoing transactional emails (invites, document rejections, status changes, and staff alerts).
+            Real-time inspection of outgoing transactional emails (invites, verification &amp; password links, document rejections, and status changes). No mail server is connected — every link below is live.
           </p>
         </div>
       </div>
@@ -238,7 +262,17 @@ export default function EmailOutboxPage() {
                   Rendered Email Message
                 </label>
                 <div className="p-4 rounded-xl border border-slate-200 bg-white font-sans text-slate-800 leading-relaxed space-y-3 shadow-xs">
-                  <p>{selectedEmail.bodyText}</p>
+                  <p>{renderBody(selectedEmail.bodyText)}</p>
+
+                  {selectedEmail.actionUrl && (
+                    <a
+                      href={selectedEmail.actionUrl}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 active:scale-[0.98] shadow-sm transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                    >
+                      <span>{selectedEmail.actionLabel || "Open link"}</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
                   
                   <div className="pt-3 border-t border-slate-100 text-[11px] text-slate-500">
                     Sent securely by <strong>{currentFirm?.name}</strong> via IntakeIQ Transactional Mail.

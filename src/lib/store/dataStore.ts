@@ -19,6 +19,7 @@ import {
   BillingCycle
 } from "../types";
 import { PLANS, FEATURE_LABELS, hasFeature, resolvePlanTier, planRank } from "../billing/plans";
+import { hashPassword, DEMO_PASSWORD, generateToken, appOrigin } from "../auth/password";
 import {
   INITIAL_FIRMS,
   INITIAL_USERS,
@@ -341,6 +342,199 @@ export class DataStore {
     return newUser;
   }
 
+  // ================= ACCOUNT SECURITY (simulated) =================
+  // Email verification, password checks and reset links are all simulated in
+  // localStorage. Every "email" lands in the firm Outbox with a clickable link.
+
+  public static getUserByEmail(email: string): UserProfile | undefined {
+    const normalized = email.trim().toLowerCase();
+    if (!normalized) return undefined;
+    return this.getUsers().find(u => u.email.toLowerCase() === normalized);
+  }
+
+  public static updateUser(userId: string, updates: Partial<UserProfile>): UserProfile {
+    const users = this.getUsers();
+    const idx = users.findIndex(u => u.id === userId);
+    if (idx === -1) throw new Error("User not found");
+    users[idx] = { ...users[idx], ...updates };
+    setLocalItem(STORAGE_KEYS.USERS, users);
+    return users[idx];
+  }
+
+  /** Accounts created before verification existed have no flag — treat them as verified. */
+  public static isEmailVerified(user: UserProfile): boolean {
+    return user.emailVerified !== false;
+  }
+
+  /** Seeded demo profiles (no stored hash) accept the shared demo password. */
+  public static verifyPassword(user: UserProfile, password: string): boolean {
+    if (user.passwordHash) return user.passwordHash === hashPassword(password);
+    return password === DEMO_PASSWORD;
+  }
+
+  /** Issues a single-use verification/activation link and "sends" it to the user. */
+  public static issueEmailVerification(
+    user: UserProfile,
+    options: { mode: "signup" | "invite"; invitedBy?: string }
+  ): { token: string; url: string } {
+    const token = generateToken("verify");
+    this.updateUser(user.id, { verificationToken: token, emailVerified: false });
+
+    const firm = this.getFirmById(user.firmId);
+    const firmName = firm?.name || "IntakeIQ";
+    const url = `${appOrigin()}/auth/verify?token=${token}`;
+    const isInvite = options.mode === "invite";
+
+    this.sendEmail({
+      firmId: user.firmId,
+      to: user.email,
+      recipientName: user.name,
+      subject: isInvite
+        ? `Activate your ${firmName} account on IntakeIQ`
+        : `Verify your email to activate ${firmName} on IntakeIQ`,
+      bodyText: isInvite
+        ? `Hello ${user.name}, ${options.invitedBy || "your administrator"} added you to ${firmName} as ${user.role}. Confirm your email address and create a password to activate your account: ${url}`
+        : `Hello ${user.name}, thanks for registering ${firmName}. Please confirm your email address to activate your workspace — you will not be able to sign in until this is done: ${url}`,
+      type: isInvite ? "invitation" : "verification",
+      actionUrl: url,
+      actionLabel: isInvite ? "Activate account" : "Verify email address",
+      metadata: { userId: user.id, mode: options.mode },
+    });
+
+    return { token, url };
+  }
+
+  /** Consumes a verification token. Invited members (no password yet) also get a set-password token. */
+  public static verifyEmail(token: string): { user: UserProfile; setupToken?: string } | null {
+    if (!token) return null;
+    const user = this.getUsers().find(u => u.verificationToken && u.verificationToken === token);
+    if (!user) return null;
+
+    const updates: Partial<UserProfile> = { emailVerified: true, verificationToken: undefined };
+    let setupToken: string | undefined;
+    if (!user.passwordHash) {
+      setupToken = generateToken("setup");
+      updates.passwordResetToken = setupToken;
+      updates.passwordResetExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    }
+    const updated = this.updateUser(user.id, updates);
+
+    this.addAuditLog({
+      firmId: user.firmId,
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      action: "Email Verified",
+      targetEntity: user.email,
+      details: "Email address confirmed via verification link.",
+    });
+
+    return { user: updated, setupToken };
+  }
+
+  /** Returns null for unknown emails so the UI can stay non-enumerating. */
+  public static requestPasswordReset(email: string): { user: UserProfile; url: string } | null {
+    const user = this.getUserByEmail(email);
+    if (!user) return null;
+
+    const token = generateToken("reset");
+    this.updateUser(user.id, {
+      passwordResetToken: token,
+      passwordResetExpiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    });
+
+    const firm = this.getFirmById(user.firmId);
+    const url = `${appOrigin()}/auth/reset-password?token=${token}`;
+    this.sendEmail({
+      firmId: user.firmId,
+      to: user.email,
+      recipientName: user.name,
+      subject: "Reset your IntakeIQ password",
+      bodyText: `Hello ${user.name}, we received a request to reset the password for your ${firm?.name || "IntakeIQ"} account. This link is valid for 60 minutes and can be used once: ${url} — if you did not request this, you can safely ignore this email.`,
+      type: "password_reset",
+      actionUrl: url,
+      actionLabel: "Reset password",
+      metadata: { userId: user.id },
+    });
+
+    this.addAuditLog({
+      firmId: user.firmId,
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      action: "Password Reset Requested",
+      targetEntity: user.email,
+      details: "Reset link issued (valid for 60 minutes, single use).",
+    });
+
+    return { user, url };
+  }
+
+  public static getUserByResetToken(token: string): UserProfile | null {
+    if (!token) return null;
+    const user = this.getUsers().find(u => u.passwordResetToken && u.passwordResetToken === token);
+    if (!user) return null;
+    if (user.passwordResetExpiresAt && new Date(user.passwordResetExpiresAt).getTime() < Date.now()) {
+      return null;
+    }
+    return user;
+  }
+
+  public static resetPassword(token: string, newPassword: string): UserProfile | null {
+    const user = this.getUserByResetToken(token);
+    if (!user) return null;
+
+    const isActivation = !user.passwordHash;
+    const updated = this.updateUser(user.id, {
+      passwordHash: hashPassword(newPassword),
+      passwordResetToken: undefined,
+      passwordResetExpiresAt: undefined,
+      emailVerified: true, // a valid emailed link proves ownership of the address
+    });
+
+    this.addAuditLog({
+      firmId: user.firmId,
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      action: isActivation ? "Account Activated" : "Password Reset",
+      targetEntity: user.email,
+      details: isActivation ? "Password created and account activated." : "Password changed via reset link.",
+    });
+
+    return updated;
+  }
+
+  public static recordSignIn(user: UserProfile, method: "password" | "demo_profile" | "client_portal"): void {
+    this.updateUser(user.id, { lastLoginAt: new Date().toISOString() });
+    const details: Record<typeof method, string> = {
+      password: "Signed in with email and password.",
+      demo_profile: "Signed in via 1-click demo profile.",
+      client_portal: "Client signed in to the secure onboarding portal.",
+    };
+    this.addAuditLog({
+      firmId: user.firmId,
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      action: "User Signed In",
+      targetEntity: user.email,
+      details: details[method],
+    });
+  }
+
+  public static recordSignOut(user: UserProfile): void {
+    this.addAuditLog({
+      firmId: user.firmId,
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      action: "User Signed Out",
+      targetEntity: user.email,
+      details: "Session ended by the user.",
+    });
+  }
+
   // ================= FORM TEMPLATES =================
   public static getFormTemplates(firmId: string): FormTemplate[] {
     const templates = getLocalItem<FormTemplate[]>(STORAGE_KEYS.TEMPLATES, INITIAL_FORM_TEMPLATES);
@@ -437,14 +631,16 @@ export class DataStore {
 
     // Transactional Email to Client
     const firm = this.getFirmById(newCase.firmId);
-    const portalUrl = `/portal/${firm?.slug || "apex-advisory"}/${newCase.id}`;
+    const portalUrl = `${appOrigin()}/portal/${firm?.slug || "apex-advisory"}/${newCase.id}`;
     this.sendEmail({
       firmId: newCase.firmId,
       to: newCase.clientEmail,
       recipientName: newCase.clientName,
       subject: `Action Required: Complete your onboarding with ${firm?.name || "IntakeIQ"}`,
-      bodyText: `Hello ${newCase.clientName}, you have been invited to complete your intake for "${newCase.title}". Access your secure portal at: ${portalUrl}`,
+      bodyText: `Hello ${newCase.clientName}, you have been invited to complete your intake for "${newCase.title}". Open your secure portal (sign in with this email address and case reference ${newCase.id}): ${portalUrl}`,
       type: "invitation",
+      actionUrl: portalUrl,
+      actionLabel: "Open secure portal",
       metadata: { caseId: newCase.id, portalUrl }
     });
 

@@ -84,12 +84,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionAction[]> = {
     "outbox:view",
     "portal:access",
   ],
+  // Staff is a view-only role across the product ("Staff (View-Only)" in the
+  // demo switcher and login) — they can open cases, forms and the team roster
+  // but cannot create, edit, approve or reject anything.
   Staff: [
     "cases:view",
-    "cases:create",
-    "cases:edit",
-    "cases:approve_docs",
-    "cases:reject_docs",
     "forms:view",
     "team:view",
     "portal:access",

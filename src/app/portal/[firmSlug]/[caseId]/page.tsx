@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { DataStore } from "@/lib/store/dataStore";
+import { useAuth } from "@/lib/context/AuthContext";
 import { hasFeature } from "@/lib/billing/plans";
 import { Firm, ClientCase, FormTemplate } from "@/lib/types";
 import DynamicFormRenderer from "@/components/forms/DynamicFormRenderer";
@@ -23,7 +24,9 @@ import {
   ArrowLeft,
   Clock,
   Loader2,
-  ChevronRight
+  ChevronRight,
+  LogOut,
+  ShieldAlert
 } from "lucide-react";
 import Link from "next/link";
 
@@ -31,9 +34,11 @@ export default function ClientPortalPage() {
   const params = useParams();
   const router = useRouter();
   const toast = useToast();
+  const { currentUser, isInitialized, logout } = useAuth();
   const firmSlug = params?.firmSlug as string;
   const caseId = params?.caseId as string;
 
+  const [loaded, setLoaded] = useState(false);
   const [firm, setFirm] = useState<Firm | null>(null);
   const [clientCase, setClientCase] = useState<ClientCase | null>(null);
   const [formTemplate, setFormTemplate] = useState<FormTemplate | null>(null);
@@ -66,11 +71,49 @@ export default function ClientPortalPage() {
       setClientCase(null);
       setFormTemplate(null);
     }
+    setLoaded(true);
   };
 
   useEffect(() => {
     loadPortalData();
   }, [firmSlug, caseId]);
+
+  // Portal access gate. A portal link alone is not enough: the visitor must be
+  // signed in as the client the case was issued to, or as staff of the owning
+  // firm. Anonymous visitors are sent to the client sign-in with the case
+  // reference pre-filled.
+  const access = (() => {
+    if (!loaded || !firm || !clientCase) return "none" as const;
+    if (!isInitialized) return "loading" as const;
+    if (!currentUser) return "anonymous" as const;
+    if (currentUser.role === "Client") {
+      return currentUser.email.toLowerCase() === clientCase.clientEmail.toLowerCase()
+        ? ("granted" as const)
+        : ("denied" as const);
+    }
+    return currentUser.firmId === firm.id ? ("granted" as const) : ("denied" as const);
+  })();
+
+  useEffect(() => {
+    if (access === "anonymous") {
+      router.replace(
+        `/auth/login?tab=client&slug=${encodeURIComponent(firmSlug)}&token=${encodeURIComponent(caseId)}`
+      );
+    }
+  }, [access, router, firmSlug, caseId]);
+
+  const handleSignOut = () => {
+    logout();
+    router.push("/auth/login?tab=client");
+  };
+
+  if (!loaded) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
+      </div>
+    );
+  }
 
   if (!firm || !clientCase) {
     return (
@@ -87,6 +130,51 @@ export default function ClientPortalPage() {
           >
             Go to Firm Dashboard
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (access === "loading" || access === "anonymous") {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-3 text-slate-500 text-xs">
+        <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
+        <span>Checking your access to this portal…</span>
+      </div>
+    );
+  }
+
+  if (access === "denied") {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-xl border border-slate-200 text-center max-w-md space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+            <ShieldAlert className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-lg font-bold text-slate-800">You don&apos;t have access to this case</h2>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              You&apos;re signed in as <strong>{currentUser?.email}</strong>, but this onboarding portal was issued to a different client. Sign in with the email address your invitation was sent to.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:brightness-110 active:scale-[0.98] rounded-xl transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Sign in as a different user
+            </button>
+            {currentUser && currentUser.role !== "Client" && (
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+              >
+                Go to Firm Dashboard
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -216,14 +304,26 @@ export default function ClientPortalPage() {
               <p className="text-[11px] text-slate-500">{clientCase.clientCompany || clientCase.clientEmail}</p>
             </div>
 
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 active:scale-[0.98] px-3 py-1.5 rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
-              title="Return to Internal Firm Dashboard"
-            >
-              <span className="hidden md:inline">Firm Dashboard</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
+            {currentUser && currentUser.role !== "Client" ? (
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 active:scale-[0.98] px-3 py-1.5 rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                title="Return to Internal Firm Dashboard"
+              >
+                <span className="hidden md:inline">Firm Dashboard</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 active:scale-[0.98] px-3 py-1.5 rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                title="Sign out of the client portal"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Sign out</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
